@@ -2,7 +2,8 @@ import csv
 from tkinter import *
 
 root = Tk()
-root.title("SisCalcComp")
+root.title("Aplicativo de Estoque e Vendas")
+root.geometry("470x500")
 
 # Função para registrar informações de compra
 def register_purchase():
@@ -126,7 +127,7 @@ sale_quantity_entry = Entry(root, textvariable=sale_quantity_var)
 sale_total_value_label = Label(root, text="")
 register_sale_button = Button(root, text="Registrar Venda", command=register_sale)
 
-compare_label = Label(root, text="Comparar")
+# compare_label = Label(root, text="Comparar")
 compare_purchase_listbox = Listbox(root)
 compare_purchase_listbox_update_button = Button(root, text="Atualizar lista de compras", command=update_compare_purchase_listbox)
 compare_sale_listbox = Listbox(root)
@@ -135,36 +136,37 @@ compare_button = Button(root, text="Comparar", command=compare)
 compare_result_label = Label(root)
 
 # Colocar widgets na tela
-purchase_label.grid(row=0,column=0,columnspan=2)
-purchase_code_label.grid(row=1,column=0)
-purchase_code_entry.grid(row=1,column=1)
-purchase_product_code_label.grid(row=2,column=0)
-purchase_product_code_entry.grid(row=2,column=1)
-purchase_value_label.grid(row=3,column=0)
-purchase_value_entry.grid(row=3,column=1)
-purchase_quantity_label.grid(row=4,column=0)
-purchase_quantity_entry.grid(row=4,column=1)
-purchase_total_value_label.grid(row=5,column=0,columnspan=2)
-register_purchase_button.grid(row=6,column=0,columnspan=2)
+purchase_label.grid(row=0, column=0, columnspan=2)
+purchase_code_label.grid(row=1, column=0)
+purchase_code_entry.grid(row=1, column=1)
+purchase_product_code_label.grid(row=2, column=0)
+purchase_product_code_entry.grid(row=2, column=1)
+purchase_value_label.grid(row=3, column=0)
+purchase_value_entry.grid(row=3, column=1)
+purchase_quantity_label.grid(row=4, column=0)
+purchase_quantity_entry.grid(row=4, column=1)
+purchase_total_value_label.grid(row=5, column=0, columnspan=2)
+register_purchase_button.grid(row=6, column=0, columnspan=2)
 
-sale_label.grid(row=7,column=0,columnspan=2)
-sale_code_label.grid(row=8,column=0)
-sale_code_entry.grid(row=8,column=1)
-sale_product_code_label.grid(row=9,column=0)
-sale_product_code_entry.grid(row=9,column=1)
-sale_value_label.grid(row=10,column=0)
-sale_value_entry.grid(row=10,column=1)
-sale_quantity_label.grid(row=11,column=0)
-sale_quantity_entry.grid(row=11,column=1)
-sale_total_value_label.grid(row=12,column=0,columnspan=2)
-register_sale_button.grid(row=13,column=0,columnspan=2)
+sale_label.grid(row=0, column=3, columnspan=2)  # Mudança na posição da label de venda
+sale_code_label.grid(row=1, column=3)
+sale_code_entry.grid(row=1, column=4)
+sale_product_code_label.grid(row=2, column=3)
+sale_product_code_entry.grid(row=2, column=4)
+sale_value_label.grid(row=3, column=3)
+sale_value_entry.grid(row=3, column=4)
+sale_quantity_label.grid(row=4, column=3)
+sale_quantity_entry.grid(row=4, column=4)
+sale_total_value_label.grid(row=5, column=3, columnspan=2)
+register_sale_button.grid(row=6, column=3, columnspan=2)
 
-compare_label.grid(row=14,column=0,columnspan=2)
-compare_purchase_listbox.grid(row=15,column=0,columnspan=2)
-compare_purchase_listbox_update_button.grid(row=16,column=0,columnspan=2)
-compare_sale_listbox.grid(row=17,column=0,columnspan=2)
-compare_sale_listbox_update_button.grid(row=18,column=0,columnspan=2)
-compare_button.grid(row=19,column=0,columnspan=2)
-compare_result_label.grid(row=20,column=0,columnspan=2)
+# compare_label.grid(row=7, column=0, columnspan=5)  # Mudança na posição da label de comparação
+compare_purchase_listbox.grid(row=8, column=0, columnspan=2, rowspan=10)  # Aumento do rowspan
+compare_purchase_listbox_update_button.grid(row=19, column=0, columnspan=2)  # Ajuste da posição
+compare_sale_listbox.grid(row=8, column=3, columnspan=2, rowspan=10)  # Aumento do rowspan
+compare_sale_listbox_update_button.grid(row=19, column=3, columnspan=2)  # Ajuste da posição
+compare_button.grid(row=19, column=0, columnspan=5)  # Mudança na posição do botão de comparação
+compare_result_label.grid(row=20, column=0, columnspan=5)  # Mudança na posição do rótulo de resultado
+
 
 root.mainloop()
