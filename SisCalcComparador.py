@@ -2,7 +2,7 @@ import csv
 from tkinter import *
 
 root = Tk()
-root.title("Aplicativo de Estoque e Vendas")
+root.title("SisCalc")
 
 # Função para registrar informações de compra
 def register_purchase():
