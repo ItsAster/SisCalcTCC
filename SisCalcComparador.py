@@ -3,27 +3,31 @@ from tkinter import *
 
 root = Tk()
 root.title("Aplicativo de Estoque e Vendas")
-root.geometry("470x500")
+root.geometry("670x500")
 
 # Função para registrar informações de compra
 def register_purchase():
     with open("compras.csv", "a", newline="") as file:
         writer = csv.writer(file)
-        writer.writerow([purchase_code_entry.get(), purchase_product_code_entry.get(), purchase_value_entry.get(), purchase_quantity_entry.get(), purchase_total_value_label["text"]])
+        writer.writerow([purchase_code_entry.get(), purchase_product_code_entry.get(), purchase_product_name_entry.get(), purchase_value_entry.get(), purchase_quantity_entry.get(), purchase_total_value_label["text"]])
     purchase_code_entry.delete(0, END)
     purchase_product_code_entry.delete(0, END)
+    purchase_product_name_entry.delete(0, END)
     purchase_value_entry.delete(0, END)
     purchase_quantity_entry.delete(0, END)
+    update_compare_purchase_listbox()  # Atualizar lista de compras
 
 # Função para registrar informações de venda
 def register_sale():
     with open("vendas.csv", "a", newline="") as file:
         writer = csv.writer(file)
-        writer.writerow([sale_code_entry.get(), sale_product_code_entry.get(), sale_value_entry.get(), sale_quantity_entry.get(), sale_total_value_label["text"]])
+        writer.writerow([sale_code_entry.get(), sale_product_code_entry.get(), sale_product_name_entry.get(), sale_value_entry.get(), sale_quantity_entry.get(), sale_total_value_label["text"]])
     sale_code_entry.delete(0, END)
     sale_product_code_entry.delete(0, END)
+    sale_product_name_entry.delete(0, END)
     sale_value_entry.delete(0, END)
     sale_quantity_entry.delete(0, END)
+    update_compare_sale_listbox()  # Atualizar lista de vendas
 
 # Função para calcular o valor total da compra
 def calculate_purchase_total_value(*args):
@@ -32,7 +36,7 @@ def calculate_purchase_total_value(*args):
         quantity = float(purchase_quantity_var.get())
         total_value = value * quantity
         purchase_total_value_label.config(text=f"{total_value:.2f}")
-    except:
+    except ValueError:
         purchase_total_value_label.config(text="")
 
 # Função para calcular o valor total da venda
@@ -42,7 +46,7 @@ def calculate_sale_total_value(*args):
         quantity = float(sale_quantity_var.get())
         total_value = value * quantity
         sale_total_value_label.config(text=f"{total_value:.2f}")
-    except:
+    except ValueError:
         sale_total_value_label.config(text="")
 
 # Função para atualizar a lista de compras na tela de comparação
@@ -52,7 +56,7 @@ def update_compare_purchase_listbox():
         reader = csv.reader(file)
         for row in reader:
             if row:
-                compare_purchase_listbox.insert(END, f"{row[0]} - {row[4]}")
+                compare_purchase_listbox.insert(END, f"{row[2]} - {row[1]} - {row[5]}")
 
 # Função para atualizar a lista de vendas na tela de comparação
 def update_compare_sale_listbox():
@@ -61,7 +65,7 @@ def update_compare_sale_listbox():
         reader = csv.reader(file)
         for row in reader:
             if row:
-                compare_sale_listbox.insert(END, f"{row[0]} - {row[4]}")
+                compare_sale_listbox.insert(END, f"{row[2]} - {row[1]} - {row[5]}")
 
 # Função para comparar uma venda selecionada com uma compra selecionada
 def compare():
@@ -75,12 +79,12 @@ def compare():
     purchase_values = selected_purchase.split(" - ")
     sale_values = selected_sale.split(" - ")
 
-    if len(purchase_values) < 2 or len(sale_values) < 2:
+    if len(purchase_values) < 3 or len(sale_values) < 3:
         compare_result_label.config(text="Formato inválido para compra ou venda.")
         return
 
-    purchase_product_number, purchase_value = purchase_values[0], float(purchase_values[1])
-    sale_product_number, sale_value = sale_values[0], float(sale_values[1])
+    purchase_product_number, purchase_quantity, purchase_value = purchase_values[0], purchase_values[1], float(purchase_values[2])
+    sale_product_number, sale_quantity, sale_value = sale_values[0], sale_values[1], float(sale_values[2])
 
     if purchase_product_number == sale_product_number:
         difference = sale_value - purchase_value
@@ -88,39 +92,42 @@ def compare():
     else:
         compare_result_label.config(text="Números de produto diferentes, não é possível comparar.")
 
-
-
-# Criar variáveis para entradas de valor e quantidade
+# Criar variáveis ​​StringVar para entradas de valor, quantidade e nome do produto
 purchase_value_var = StringVar()
 purchase_quantity_var = StringVar()
 sale_value_var = StringVar()
 sale_quantity_var = StringVar()
 
-# Rastrear alterações nas entradas de valor e quantidade
+# Rastrear alterações nas entradas de valor, quantidade e nome do produto
 purchase_value_var.trace_add("write", calculate_purchase_total_value)
 purchase_quantity_var.trace_add("write", calculate_purchase_total_value)
 sale_value_var.trace_add("write", calculate_sale_total_value)
 sale_quantity_var.trace_add("write", calculate_sale_total_value)
 
-# Criar widgets de compra
+# Criar widgets
 purchase_label = Label(root, text="Registrar Compra")
 purchase_code_label = Label(root, text="Código Nota:")
 purchase_code_entry = Entry(root)
 purchase_product_code_label = Label(root, text="Código Produto:")
 purchase_product_code_entry = Entry(root)
+purchase_product_name_label = Label(root, text="Nome Produto:")
+purchase_product_name_entry = Entry(root)
 purchase_value_label = Label(root, text="Valor por unidade:")
 purchase_value_entry = Entry(root, textvariable=purchase_value_var)
 purchase_quantity_label = Label(root, text="Quantidade:")
 purchase_quantity_entry = Entry(root, textvariable=purchase_quantity_var)
 purchase_total_value_label = Label(root, text="")
+purchase_product_name_label = Label(root, text="Nome Produto:")
+purchase_product_name_entry = Entry(root)
 register_purchase_button = Button(root, text="Registrar Compra", command=register_purchase)
 
-# Criar widgets de compra
 sale_label = Label(root, text="Registrar Venda")
 sale_code_label = Label(root, text="Código Nota:")
 sale_code_entry = Entry(root)
 sale_product_code_label = Label(root, text="Código Produto:")
 sale_product_code_entry = Entry(root)
+sale_product_name_label = Label(root, text="Nome Produto:")
+sale_product_name_entry = Entry(root)
 sale_value_label = Label(root, text="Valor por unidade:")
 sale_value_entry = Entry(root, textvariable=sale_value_var)
 sale_quantity_label = Label(root, text="Quantidade:")
@@ -128,7 +135,7 @@ sale_quantity_entry = Entry(root, textvariable=sale_quantity_var)
 sale_total_value_label = Label(root, text="")
 register_sale_button = Button(root, text="Registrar Venda", command=register_sale)
 
-# compare_label = Label(root, text="Comparar")
+
 compare_purchase_listbox = Listbox(root)
 compare_purchase_listbox_update_button = Button(root, text="Atualizar lista de compras", command=update_compare_purchase_listbox)
 compare_sale_listbox = Listbox(root)
@@ -136,33 +143,40 @@ compare_sale_listbox_update_button = Button(root, text="Atualizar lista de venda
 compare_button = Button(root, text="Comparar", command=compare)
 compare_result_label = Label(root)
 
-# Colocar widgets compra
+sale_product_name_label = Label(root, text="Nome Produto:")
+sale_product_name_entry = Entry(root)
+
+#Widgets em tela Compra
 purchase_label.grid(row=0, column=0, columnspan=2)
 purchase_code_label.grid(row=1, column=0)
 purchase_code_entry.grid(row=1, column=1)
 purchase_product_code_label.grid(row=2, column=0)
 purchase_product_code_entry.grid(row=2, column=1)
-purchase_value_label.grid(row=3, column=0)
-purchase_value_entry.grid(row=3, column=1)
-purchase_quantity_label.grid(row=4, column=0)
-purchase_quantity_entry.grid(row=4, column=1)
-purchase_total_value_label.grid(row=5, column=0, columnspan=2)
-register_purchase_button.grid(row=6, column=0, columnspan=2)
+purchase_product_name_label.grid(row=3, column=0)
+purchase_product_name_entry.grid(row=3, column=1)
+purchase_value_label.grid(row=4, column=0)
+purchase_value_entry.grid(row=4, column=1)
+purchase_quantity_label.grid(row=5, column=0)
+purchase_quantity_entry.grid(row=5, column=1)
+purchase_total_value_label.grid(row=6, column=0, columnspan=2)
+register_purchase_button.grid(row=7, column=0, columnspan=2)
 
-# Colocar widgets venda
-sale_label.grid(row=0, column=3, columnspan=2)  # Mudança na posição da label de venda
+#Widgets em tela Venda
+sale_label.grid(row=0, column=3, columnspan=2)
 sale_code_label.grid(row=1, column=3)
 sale_code_entry.grid(row=1, column=4)
 sale_product_code_label.grid(row=2, column=3)
 sale_product_code_entry.grid(row=2, column=4)
-sale_value_label.grid(row=3, column=3)
-sale_value_entry.grid(row=3, column=4)
-sale_quantity_label.grid(row=4, column=3)
-sale_quantity_entry.grid(row=4, column=4)
-sale_total_value_label.grid(row=5, column=3, columnspan=2)
-register_sale_button.grid(row=6, column=3, columnspan=2)
+sale_product_name_label.grid(row=3, column=3)
+sale_product_name_entry.grid(row=3, column=4)
+sale_value_label.grid(row=4, column=3)
+sale_value_entry.grid(row=4, column=4)
+sale_quantity_label.grid(row=5, column=3)
+sale_quantity_entry.grid(row=5, column=4)
+sale_total_value_label.grid(row=6, column=3, columnspan=2)
+register_sale_button.grid(row=7, column=3, columnspan=2)
 
-# compare_label.grid(row=7, column=0, columnspan=5)  # Mudança na posição da label de comparação
+#Widgets em tela Comparação
 compare_purchase_listbox.grid(row=8, column=0, columnspan=2, rowspan=10)  # Aumento do rowspan
 compare_purchase_listbox_update_button.grid(row=19, column=0, columnspan=2)  # Ajuste da posição
 compare_sale_listbox.grid(row=8, column=3, columnspan=2, rowspan=10)  # Aumento do rowspan
