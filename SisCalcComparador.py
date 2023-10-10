@@ -63,7 +63,7 @@ def update_compare_sale_listbox():
             if row:
                 compare_sale_listbox.insert(END, f"{row[0]} - {row[4]}")
 
-# Função para comparar uma venda selecionada com uma compra selecionada purchase_product_code_entry
+# Função para comparar uma venda selecionada com uma compra selecionada
 def compare():
     selected_purchase = compare_purchase_listbox.get(ACTIVE)
     selected_sale = compare_sale_listbox.get(ACTIVE)
@@ -90,7 +90,7 @@ def compare():
 
 
 
-# Criar variáveis ​​StringVar para entradas de valor e quantidade
+# Criar variáveis para entradas de valor e quantidade
 purchase_value_var = StringVar()
 purchase_quantity_var = StringVar()
 sale_value_var = StringVar()
@@ -102,7 +102,7 @@ purchase_quantity_var.trace_add("write", calculate_purchase_total_value)
 sale_value_var.trace_add("write", calculate_sale_total_value)
 sale_quantity_var.trace_add("write", calculate_sale_total_value)
 
-# Criar widgets
+# Criar widgets de compra
 purchase_label = Label(root, text="Registrar Compra")
 purchase_code_label = Label(root, text="Código Nota:")
 purchase_code_entry = Entry(root)
@@ -115,6 +115,7 @@ purchase_quantity_entry = Entry(root, textvariable=purchase_quantity_var)
 purchase_total_value_label = Label(root, text="")
 register_purchase_button = Button(root, text="Registrar Compra", command=register_purchase)
 
+# Criar widgets de compra
 sale_label = Label(root, text="Registrar Venda")
 sale_code_label = Label(root, text="Código Nota:")
 sale_code_entry = Entry(root)
@@ -135,7 +136,7 @@ compare_sale_listbox_update_button = Button(root, text="Atualizar lista de venda
 compare_button = Button(root, text="Comparar", command=compare)
 compare_result_label = Label(root)
 
-# Colocar widgets na tela
+# Colocar widgets compra
 purchase_label.grid(row=0, column=0, columnspan=2)
 purchase_code_label.grid(row=1, column=0)
 purchase_code_entry.grid(row=1, column=1)
@@ -148,6 +149,7 @@ purchase_quantity_entry.grid(row=4, column=1)
 purchase_total_value_label.grid(row=5, column=0, columnspan=2)
 register_purchase_button.grid(row=6, column=0, columnspan=2)
 
+# Colocar widgets venda
 sale_label.grid(row=0, column=3, columnspan=2)  # Mudança na posição da label de venda
 sale_code_label.grid(row=1, column=3)
 sale_code_entry.grid(row=1, column=4)
