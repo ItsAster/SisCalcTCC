@@ -2,7 +2,7 @@ import csv
 from tkinter import *
 
 root = Tk()
-root.title("Aplicativo de Estoque e Vendas")
+root.title("SisCalcComp")
 root.geometry("670x500")
 
 # Função para registrar informações de compra
@@ -83,8 +83,12 @@ def compare():
         compare_result_label.config(text="Formato inválido para compra ou venda.")
         return
 
-    purchase_product_number, purchase_quantity, purchase_value = purchase_values[0], purchase_values[1], float(purchase_values[2])
-    sale_product_number, sale_quantity, sale_value = sale_values[0], sale_values[1], float(sale_values[2])
+    try:
+        purchase_product_number, purchase_quantity, purchase_value = purchase_values[0], purchase_values[1], float(purchase_values[2])
+        sale_product_number, sale_quantity, sale_value = sale_values[0], sale_values[1], float(sale_values[2])
+    except ValueError:
+        compare_result_label.config(text="Formato inválido para valor de compra ou venda.")
+        return
 
     if purchase_product_number == sale_product_number:
         difference = sale_value - purchase_value
