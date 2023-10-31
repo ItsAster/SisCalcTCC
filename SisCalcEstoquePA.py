@@ -6,6 +6,9 @@ estoque = {}
 historico_estoque = []
 
 def carregar_estoque():
+    """
+    Carrega os dados do estoque a partir do arquivo CSV 'estoque.csv' e popula a estrutura de dados 'estoque'.
+    """
     try:
         with open('estoque.csv', newline='') as csvfile:
             reader = csv.DictReader(csvfile)
@@ -21,8 +24,13 @@ def carregar_estoque():
                 })
     except FileNotFoundError:
         pass
+    except Exception as e:
+        print(f"Erro ao carregar o estoque: {e}")
 
 def salvar_csv():
+    """
+    Salva os dados do estoque no arquivo CSV 'estoque.csv' e o histórico no arquivo 'historico_estoque.csv'.
+    """
     with open('estoque.csv', 'w', newline='') as csvfile:
         fieldnames = ['Numero', 'Nome', 'Valor', 'Quantidade', 'ValorTotal', 'DataCadastro', 'Ramificacao']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
@@ -42,7 +50,50 @@ def salvar_csv():
         historico_df = pd.DataFrame(historico_estoque)
         historico_df.to_csv('historico_estoque.csv', index=False)
 
+def obter_numero_valido(mensagem):
+    """
+    Obtém um número inteiro válido da entrada do usuário.
+
+    Parâmetros:
+    - mensagem: Mensagem a ser exibida ao solicitar a entrada.
+
+    Retorna:
+    - int: Número inteiro inserido pelo usuário.
+    """
+    while True:
+        try:
+            numero = int(input(mensagem))
+            return numero
+        except ValueError:
+            print("Erro: Por favor, insira um número inteiro válido.")
+
+def obter_quantidade_valida():
+    """
+    Obtém uma quantidade válida da entrada do usuário.
+
+    Retorna:
+    - int: Quantidade inserida pelo usuário.
+    """
+    while True:
+        try:
+            quantidade = int(input("Quantidade do Produto: "))
+            if quantidade <= 0:
+                print("Erro: A quantidade deve ser maior que zero.")
+                continue
+            return quantidade
+        except ValueError:
+            print("Erro: Por favor, insira uma quantidade válida.")
+
 def cadastrar_produto(numero, nome, valor_str, quantidade):
+    """
+    Cadastra um novo produto no estoque.
+
+    Parâmetros:
+    - numero (int): Número do produto.
+    - nome (str): Nome do produto.
+    - valor_str (str): Valor do produto em formato de string.
+    - quantidade (int): Quantidade do produto.
+    """
     while True:
         try:
             valor = float(valor_str.replace(',', '.'))
@@ -81,26 +132,10 @@ def cadastrar_produto(numero, nome, valor_str, quantidade):
     print(f"Produto {numero} ({nome}) cadastrado com sucesso.")
     salvar_csv()
 
-def obter_numero_valido():
-    while True:
-        try:
-            numero = int(input("Número do Produto: "))
-            return numero
-        except ValueError:
-            print("Erro: Por favor, insira um número inteiro válido.")
-
-def obter_quantidade_valida():
-    while True:
-        try:
-            quantidade = int(input("Quantidade do Produto: "))
-            if quantidade <= 0:
-                print("Erro: A quantidade deve ser maior que zero.")
-                continue
-            return quantidade
-        except ValueError:
-            print("Erro: Por favor, insira uma quantidade válida.")
-
 def exibir_estoque():
+    """
+    Exibe informações detalhadas sobre o estoque, incluindo quantidade e valor total.
+    """
     if estoque:
         print("Estoque:")
         valor_total_estoque = 0
@@ -136,6 +171,12 @@ def exibir_estoque():
         print("O estoque está vazio.")
 
 def pesquisar_produto(numero):
+    """
+    Pesquisa e exibe informações detalhadas sobre um produto específico.
+
+    Parâmetros:
+    - numero (int): Número do produto a ser pesquisado.
+    """
     if numero in estoque:
         for ramificacao, registros in estoque[numero].items():
             print(f"Produtos com número {numero} (Ramificação {ramificacao}):")
@@ -149,8 +190,14 @@ def pesquisar_produto(numero):
     else:
         print(f"Produtos com número {numero} não encontrados no estoque.")
 
-
 def editar_produto(numero, ramificacao):
+    """
+    Edita as informações de um produto específico.
+
+    Parâmetros:
+    - numero (int): Número do produto a ser editado.
+    - ramificacao (int): Ramificação do produto a ser editado.
+    """
     if numero in estoque and ramificacao in estoque[numero]:
         print(f"Editar Produto {numero} (Ramificação {ramificacao}):")
         print("1. Editar Nome")
@@ -175,7 +222,7 @@ def editar_produto(numero, ramificacao):
             print("Valor editado com sucesso.")
             salvar_csv()
         elif escolha == '3':
-            nova_quantidade = int(input("Nova Quantidade: "))
+            nova_quantidade = obter_quantidade_valida()
             for produto in estoque[numero][ramificacao]:
                 produto['quantidade'] = nova_quantidade
                 produto['valor_total'] = produto['valor'] * nova_quantidade
@@ -203,32 +250,19 @@ while True:
     escolha = input("Escolha uma opção (1/2/3/4/5): ")
 
     if escolha == '1':
-        while True:
-            try:
-                numero = int(input("Número do Produto: "))
-                break  # Saia do loop se a conversão for bem-sucedida
-            except ValueError:
-                print("Por favor, insira um número válido.")
-
+        numero = obter_numero_valido("Número do Produto: ")
         nome = input("Nome do Produto: ")
         valor_str = input("Valor do Produto (use ponto como separador decimal): ")
-
-        while True:
-            try:
-                quantidade = int(input("Quantidade do Produto: "))
-                break  # Saia do loop se a conversão for bem-sucedida
-            except ValueError:
-                print("Por favor, insira uma quantidade válida.")
-
+        quantidade = obter_quantidade_valida()
         cadastrar_produto(numero, nome, valor_str, quantidade)
     elif escolha == '2':
         exibir_estoque()
     elif escolha == '3':
-        numero_pesquisa = int(input("Digite o número do produto para pesquisa: "))
+        numero_pesquisa = obter_numero_valido("Digite o número do produto para pesquisa: ")
         pesquisar_produto(numero_pesquisa)
     elif escolha == '4':
-        numero_edicao = int(input("Digite o número do produto para edição: "))
-        ramificacao_edicao = int(input("Digite a ramificação do produto para edição: "))
+        numero_edicao = obter_numero_valido("Digite o número do produto para edição: ")
+        ramificacao_edicao = obter_numero_valido("Digite a ramificação do produto para edição: ")
         editar_produto(numero_edicao, ramificacao_edicao)
     elif escolha == '5':
         print("Saindo do programa.")
