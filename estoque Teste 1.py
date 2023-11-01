@@ -91,12 +91,21 @@ class EstoqueApp:
         # Botão Pesquisar
         btn_pesquisar = ttk.Button(
             self.tab_pesquisa, text='Pesquisar', command=self.pesquisar_produto)
-        btn_pesquisar.grid(row=1, column=0, columnspan=2, pady=10)
+        btn_pesquisar.grid(row=0, column=2, pady=10)
 
-        # Área de exibição do resultado da pesquisa
+        # Área de exibição do resultado da pesquisa com barra de rolagem
         self.text_pesquisa_resultado = tk.Text(
             self.tab_pesquisa, wrap=tk.WORD, width=60, height=20)
-        self.text_pesquisa_resultado.grid(row=2, column=3, padx=5, pady=5)
+        self.text_pesquisa_resultado.grid(row=1, column=0, columnspan=3, padx=5, pady=5)
+
+        # Barra de rolagem para a área de resultado
+        scrollbar = ttk.Scrollbar(self.tab_pesquisa, command=self.text_pesquisa_resultado.yview)
+        scrollbar.grid(row=1, column=3, sticky='ns')
+        self.text_pesquisa_resultado['yscrollcommand'] = scrollbar.set
+
+        
+
+
 
     def carregar_estoque(self):
         try:
