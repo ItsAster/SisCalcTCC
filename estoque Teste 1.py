@@ -1,6 +1,5 @@
 import tkinter as tk
-from tkinter import ttk
-from tkinter import messagebox
+from tkinter import ttk, messagebox
 from datetime import date
 import csv
 import pandas as pd
@@ -103,10 +102,6 @@ class EstoqueApp:
         scrollbar.grid(row=1, column=3, sticky='ns')
         self.text_pesquisa_resultado['yscrollcommand'] = scrollbar.set
 
-        
-
-
-
     def carregar_estoque(self):
         try:
             with open('estoque.csv', newline='') as csvfile:
@@ -134,7 +129,7 @@ class EstoqueApp:
                 for info in registros:
                     dados_organizados.append({
                         'Numero': numero,
-                        'Ramificacao': ramificacao,  # Adicione esta linha
+                        'Ramificacao': ramificacao,
                         'Nome': info['nome'],
                         'Valor': info['valor'],
                         'Quantidade': info['quantidade'],
@@ -154,10 +149,6 @@ class EstoqueApp:
         # Salvar histórico
         historico_df = pd.DataFrame(self.historico_estoque)
         historico_df.to_csv('historico_estoque.csv', index=False)
-
-
-
-
 
     def cadastrar_produto(self):
         try:
@@ -188,17 +179,14 @@ class EstoqueApp:
                 'data_cadastro': data_atual
             })
 
-            if ramificacao > 1:
-                messagebox.showinfo("Sucesso", f"Ramificação {ramificacao} do Produto {numero} ({nome}) cadastrada com sucesso.")
-            else:
-                messagebox.showinfo("Sucesso", f"Produto {numero} ({nome}) cadastrado com sucesso.")
-                
+            message = f"Ramificação {ramificacao} do Produto {numero} ({nome}) cadastrada com sucesso." if ramificacao > 1 else f"Produto {numero} ({nome}) cadastrado com sucesso."
+            messagebox.showinfo("Sucesso", message)
+
             self.salvar_csv()
             self.update_estoque_display()
 
         except ValueError:
             messagebox.showerror("Erro", "Por favor, insira valores válidos.")
-
 
     def update_estoque_display(self):
         self.text_estoque.delete(1.0, tk.END)  # Limpar o texto atual
@@ -225,9 +213,9 @@ class EstoqueApp:
 
                     for info in registros:
                         self.text_estoque.insert(tk.END, f"    Nome: {info['nome']}\n")
-                        self.text_estoque.insert(tk.END, f"    Valor: R${info['valor']:.2f}\n")  # Formatando para 2 casas decimais
+                        self.text_estoque.insert(tk.END, f"    Valor: R${info['valor']:.2f}\n")
                         self.text_estoque.insert(tk.END, f"    Quantidade: {info['quantidade']}\n")
-                        self.text_estoque.insert(tk.END, f"    Valor Total: R${info['valor_total']:.2f}\n")  # Formatando para 2 casas decimais
+                        self.text_estoque.insert(tk.END, f"    Valor Total: R${info['valor_total']:.2f}\n")
                         self.text_estoque.insert(tk.END, f"    Data de Cadastro: {info['data_cadastro']}\n")
                         self.text_estoque.insert(tk.END, "-" * 20 + "\n")
 
@@ -236,15 +224,13 @@ class EstoqueApp:
                         quantidade_total_produto += info['quantidade']
 
                 self.text_estoque.insert(
-                    tk.END, f"  Valor total referente ao (Produto {numero}): R${valor_total_produto:.2f}\n")  # Formatando para 2 casas decimais
+                    tk.END, f"  Valor total referente ao (Produto {numero}): R${valor_total_produto:.2f}\n")
                 self.text_estoque.insert(
                     tk.END, f"  Quantidade total referente ao (Produto {numero}): {quantidade_total_produto}\n")
                 self.text_estoque.insert(tk.END, "=" * 20 + "\n")
 
         else:
             self.text_estoque.insert(tk.END, "O estoque está vazio.")
-
-            
 
     def pesquisar_produto(self):
         try:
@@ -279,6 +265,7 @@ class EstoqueApp:
         except ValueError:
             messagebox.showerror(
                 "Erro", "Por favor, insira um número de produto válido.")
+
 
 if __name__ == "__main__":
     root = tk.Tk()
