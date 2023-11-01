@@ -118,25 +118,27 @@ class EstoqueApp:
             messagebox.showerror("Erro", f"Erro ao carregar o estoque: {e}")
 
     def salvar_csv(self):
-        with open('estoque.csv', 'w', newline='') as csvfile:
-            fieldnames = ['Numero', 'Nome', 'Valor', 'Quantidade',
-                          'ValorTotal', 'DataCadastro', 'Ramificacao']
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            writer.writeheader()
+        # Organizar dados antes de salvar
+        dados_organizados = []
+        for numero, ramificacoes in self.estoque.items():
+            for ramificacao, registros in ramificacoes.items():
+                dados_organizados.extend(registros)
 
-            for numero, ramificacoes in self.estoque.items():
-                for ramificacao, registros in ramificacoes.items():
-                    for info in registros:
-                        writer.writerow({'Numero': numero,
-                                         'Nome': info['nome'],
-                                         'Valor': info['valor'],
-                                         'Quantidade': info['quantidade'],
-                                         'ValorTotal': info['valor_total'],
-                                         'DataCadastro': info['data_cadastro'].isoformat(),
-                                         'Ramificacao': ramificacao})
+        # Converter dados para DataFrame do pandas
+        df = pd.DataFrame(dados_organizados)
 
-            historico_df = pd.DataFrame(self.historico_estoque)
-            historico_df.to_csv('historico_estoque.csv', index=False)
+        # Ordenar por número do produto
+        df.sort_values(by=['Numero', 'Ramificacao'], inplace=True)
+
+        # Salvar dados ordenados no arquivo CSV
+        df.to_csv('estoque.csv', index=False)
+
+        # Salvar histórico
+        historico_df = pd.DataFrame(self.historico_estoque)
+        historico_df.to_csv('historico_estoque.csv', index=False)
+
+
+
 
     def cadastrar_produto(self):
         try:
@@ -167,41 +169,63 @@ class EstoqueApp:
                 'data_cadastro': data_atual
             })
 
-            messagebox.showinfo("Sucesso", f"Produto {
-                                numero} ({nome}) cadastrado com sucesso.")
+            if ramificacao > 1:
+                messagebox.showinfo("Sucesso", f"Ramificação {ramificacao} do Produto {numero} ({nome}) cadastrada com sucesso.")
+            else:
+                messagebox.showinfo("Sucesso", f"Produto {numero} ({nome}) cadastrado com sucesso.")
+                
             self.salvar_csv()
             self.update_estoque_display()
 
         except ValueError:
             messagebox.showerror("Erro", "Por favor, insira valores válidos.")
 
+
     def update_estoque_display(self):
         self.text_estoque.delete(1.0, tk.END)  # Limpar o texto atual
 
         if self.estoque:
-            for numero, ramificacoes in self.estoque.items():
+            # Ordenar os números dos produtos de forma crescente
+            sorted_numeros = sorted(self.estoque.keys())
+
+            for numero in sorted_numeros:
+                ramificacoes = self.estoque[numero]
+
                 self.text_estoque.insert(tk.END, f"Produto {numero}: \n")
 
-                for ramificacao, registros in ramificacoes.items():
-                    self.text_estoque.insert(
-                        tk.END, f"  Ramificação {ramificacao}: \n")
+                valor_total_produto = 0
+                quantidade_total_produto = 0
+
+                # Ordenar as ramificações de forma crescente
+                sorted_ramificacoes = sorted(ramificacoes.keys())
+
+                for ramificacao in sorted_ramificacoes:
+                    registros = ramificacoes[ramificacao]
+
+                    self.text_estoque.insert(tk.END, f"  Ramificação {ramificacao}: \n")
 
                     for info in registros:
-                        self.text_estoque.insert(
-                            tk.END, f"    Nome: {info['nome']}\n")
-                        self.text_estoque.insert(
-                            tk.END, f"    Valor: R${info['valor']}\n")
-                        self.text_estoque.insert(tk.END, f"    Quantidade: {
-                                                 info['quantidade']}\n")
-                        self.text_estoque.insert(tk.END, f"    Valor Total: R${
-                                                 info['valor_total']}\n")
-                        self.text_estoque.insert(tk.END, f"    Data de Cadastro: {
-                                                 info['data_cadastro']}\n")
+                        self.text_estoque.insert(tk.END, f"    Nome: {info['nome']}\n")
+                        self.text_estoque.insert(tk.END, f"    Valor: R${info['valor']:.2f}\n")  # Formatando para 2 casas decimais
+                        self.text_estoque.insert(tk.END, f"    Quantidade: {info['quantidade']}\n")
+                        self.text_estoque.insert(tk.END, f"    Valor Total: R${info['valor_total']:.2f}\n")  # Formatando para 2 casas decimais
+                        self.text_estoque.insert(tk.END, f"    Data de Cadastro: {info['data_cadastro']}\n")
                         self.text_estoque.insert(tk.END, "-" * 20 + "\n")
 
+                        # Atualizar valores totais do produto
+                        valor_total_produto += info['valor_total']
+                        quantidade_total_produto += info['quantidade']
+
+                self.text_estoque.insert(
+                    tk.END, f"  Valor total referente ao (Produto {numero}): R${valor_total_produto:.2f}\n")  # Formatando para 2 casas decimais
+                self.text_estoque.insert(
+                    tk.END, f"  Quantidade total referente ao (Produto {numero}): {quantidade_total_produto}\n")
                 self.text_estoque.insert(tk.END, "=" * 20 + "\n")
+
         else:
             self.text_estoque.insert(tk.END, "O estoque está vazio.")
+
+            
 
     def pesquisar_produto(self):
         try:
@@ -213,19 +237,20 @@ class EstoqueApp:
             # Pesquisar o produto no estoque
             if numero_pesquisa in self.estoque:
                 for ramificacao, registros in self.estoque[numero_pesquisa].items():
-                    for info in registros:
-                        self.text_pesquisa_resultado.insert(
-                            tk.END, f"Nome: {info['nome']}\n")
-                        self.text_pesquisa_resultado.insert(
-                            tk.END, f"Valor: R${info['valor']}\n")
-                        self.text_pesquisa_resultado.insert(
-                            tk.END, f"Quantidade: {info['quantidade']}\n")
-                        self.text_pesquisa_resultado.insert(
-                            tk.END, f"Valor Total: R${info['valor_total']}\n")
-                        self.text_pesquisa_resultado.insert(
-                            tk.END, f"Data de Cadastro: {info['data_cadastro']}\n")
-                        self.text_pesquisa_resultado.insert(
-                            tk.END, "-" * 20 + "\n")
+                    # Exibir informações da primeira ramificação encontrada
+                    info = registros[0]
+                    self.text_pesquisa_resultado.insert(
+                        tk.END, f"Nome: {info['nome']}\n")
+                    self.text_pesquisa_resultado.insert(
+                        tk.END, f"Valor: R${info['valor']}\n")
+                    self.text_pesquisa_resultado.insert(
+                        tk.END, f"Quantidade: {info['quantidade']}\n")
+                    self.text_pesquisa_resultado.insert(
+                        tk.END, f"Valor Total: R${info['valor_total']}\n")
+                    self.text_pesquisa_resultado.insert(
+                        tk.END, f"Data de Cadastro: {info['data_cadastro']}\n")
+                    self.text_pesquisa_resultado.insert(
+                        tk.END, "-" * 20 + "\n")
 
                 self.text_pesquisa_resultado.insert(tk.END, "=" * 20 + "\n")
             else:
@@ -235,7 +260,6 @@ class EstoqueApp:
         except ValueError:
             messagebox.showerror(
                 "Erro", "Por favor, insira um número de produto válido.")
-
 
 if __name__ == "__main__":
     root = tk.Tk()
