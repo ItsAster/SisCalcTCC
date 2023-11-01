@@ -122,12 +122,21 @@ class EstoqueApp:
         dados_organizados = []
         for numero, ramificacoes in self.estoque.items():
             for ramificacao, registros in ramificacoes.items():
-                dados_organizados.extend(registros)
+                for info in registros:
+                    dados_organizados.append({
+                        'Numero': numero,
+                        'Ramificacao': ramificacao,  # Adicione esta linha
+                        'Nome': info['nome'],
+                        'Valor': info['valor'],
+                        'Quantidade': info['quantidade'],
+                        'ValorTotal': info['valor_total'],
+                        'DataCadastro': info['data_cadastro'].isoformat()
+                    })
 
         # Converter dados para DataFrame do pandas
         df = pd.DataFrame(dados_organizados)
 
-        # Ordenar por número do produto
+        # Ordenar por número do produto e ramificação
         df.sort_values(by=['Numero', 'Ramificacao'], inplace=True)
 
         # Salvar dados ordenados no arquivo CSV
@@ -136,6 +145,7 @@ class EstoqueApp:
         # Salvar histórico
         historico_df = pd.DataFrame(self.historico_estoque)
         historico_df.to_csv('historico_estoque.csv', index=False)
+
 
 
 
