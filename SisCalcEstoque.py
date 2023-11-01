@@ -1,254 +1,243 @@
+import tkinter as tk
+from tkinter import ttk
+from tkinter import messagebox
+from datetime import date
 import csv
-import datetime
-
-estoque = {}
-historico_estoque = []  # Lista para manter histórico de cadastros
-
-def carregar_estoque():
-    try:
-        with open('estoque.csv', newline='') as csvfile:
-            reader = csv.DictReader(csvfile)
-            for row in reader:
-                numero = int(row['Numero'])
-                if 'Ramificacao' in row:
-                    ramificacao = int(row['Ramificacao'])
-                else:
-                    # Caso 'Ramificacao' não esteja presente, assume-se 1 como padrão
-                    ramificacao = 1
-
-                if numero not in estoque:
-                    estoque[numero] = {}
-                if ramificacao not in estoque[numero]:
-                    estoque[numero][ramificacao] = []
-                estoque[numero][ramificacao].append({
-                    'nome': row['Nome'],
-                    'valor': float(row['Valor']),
-                    'quantidade': int(row['Quantidade']),
-                    'valor_total': float(row['ValorTotal']),
-                    'data_cadastro': datetime.date.fromisoformat(row['DataCadastro'])
-                })
-    except FileNotFoundError:
-        pass
-
-def cadastrar_produto(numero, nome, valor_str, quantidade):
-    valor = float(valor_str.replace(',', '.'))  # Substituir vírgula por ponto e converter para float
-    data_atual = datetime.date.today()
-    ramificacao = 1
-
-    if numero in estoque:
-        # Se o produto já existe no estoque, determinar a próxima ramificação
-        ramificacao = max(estoque[numero].keys()) + 1 if estoque[numero] else 1
-
-    if numero not in estoque:
-        estoque[numero] = {}
-
-    if ramificacao not in estoque[numero]:
-        estoque[numero][ramificacao] = []
-
-    valor_total = valor * quantidade
-    estoque[numero][ramificacao].append({
-        'nome': nome,
-        'valor': valor,
-        'quantidade': quantidade,
-        'valor_total': valor_total,
-        'data_cadastro': data_atual
-    })
-
-    # Adicionar o novo cadastro ao histórico
-    historico_estoque.append({
-        'numero': numero,
-        'ramificacao': ramificacao,
-        'nome': nome,
-        'valor': valor,
-        'quantidade': quantidade,
-        'valor_total': valor_total,
-        'data_cadastro': data_atual
-    })
-
-    print(f"Produto {numero} ({nome}) cadastrado com sucesso.")
-    salvar_csv()  # Salvar automaticamente após cadastrar
+import pandas as pd
 
 
+class EstoqueApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Gestão de Estoque")
 
+        self.estoque = {}
+        self.historico_estoque = []
 
-def exibir_estoque():
-    if estoque:
-        print("Estoque:")
-        valor_total_estoque = 0
-        quantidade_total_estoque = 0
+        # Carregar o estoque existente
+        self.carregar_estoque()
 
-        for numero, ramificacoes in estoque.items():
-            valor_total_produto = 0
-            quantidade_total_produto = 0
+        # Criar widgets
+        self.create_widgets()
 
-            print(f"Produto {numero}:")
-            for ramificacao, registros in ramificacoes.items():
-                quantidade_total_ramificacao = sum(info['quantidade'] for info in registros)
-                valor_total_ramificacao = sum(info['valor_total'] for info in registros)
+    def create_widgets(self):
+        # Criar notebook (abas)
+        self.notebook = ttk.Notebook(self.root)
+        self.notebook.pack(padx=10, pady=10, expand=True, fill='both')
 
-                print(f"  Ramificação {ramificacao}:")
-                print(f"    Quantidade Total: {quantidade_total_ramificacao}")
-                print(f"    Valor Total: R${valor_total_ramificacao}")
-                print("-" * 20)
+        # Aba de Cadastro
+        self.tab_cadastro = ttk.Frame(self.notebook)
+        self.notebook.add(self.tab_cadastro, text='Cadastrar Produto')
+        self.create_cadastro_widgets()
 
-                quantidade_total_produto += quantidade_total_ramificacao
-                valor_total_produto += valor_total_ramificacao
+        # Aba de Estoque
+        self.tab_estoque = ttk.Frame(self.notebook)
+        self.notebook.add(self.tab_estoque, text='Exibir Estoque')
+        self.create_estoque_widgets()
 
-            print(f"  Quantidade Total do Produto: {quantidade_total_produto}")
-            print(f"  Valor Total do Produto: R${valor_total_produto}")
-            print("=" * 20)
+        # Aba de Pesquisa
+        self.tab_pesquisa = ttk.Frame(self.notebook)
+        self.notebook.add(self.tab_pesquisa, text='Pesquisar Produto')
+        self.create_pesquisa_widgets()
 
-            quantidade_total_estoque += quantidade_total_produto
-            valor_total_estoque += valor_total_produto
+    def create_cadastro_widgets(self):
+        # Número do Produto
+        lbl_numero = ttk.Label(self.tab_cadastro, text='Número do Produto:')
+        lbl_numero.grid(row=0, column=0, padx=5, pady=5, sticky='e')
+        self.entry_numero = ttk.Entry(self.tab_cadastro)
+        self.entry_numero.grid(row=0, column=1, padx=5, pady=5)
 
-        print(f"Quantidade Total do Estoque: {quantidade_total_estoque}")
-        print(f"Valor Total do Estoque: R${valor_total_estoque}")
-    else:
-        print("O estoque está vazio.")
+        # Nome do Produto
+        lbl_nome = ttk.Label(self.tab_cadastro, text='Nome do Produto:')
+        lbl_nome.grid(row=1, column=0, padx=5, pady=5, sticky='e')
+        self.entry_nome = ttk.Entry(self.tab_cadastro)
+        self.entry_nome.grid(row=1, column=1, padx=5, pady=5)
 
+        # Valor do Produto
+        lbl_valor = ttk.Label(self.tab_cadastro, text='Valor do Produto:')
+        lbl_valor.grid(row=2, column=0, padx=5, pady=5, sticky='e')
+        self.entry_valor = ttk.Entry(self.tab_cadastro)
+        self.entry_valor.grid(row=2, column=1, padx=5, pady=5)
 
+        # Quantidade do Produto
+        lbl_quantidade = ttk.Label(
+            self.tab_cadastro, text='Quantidade do Produto:')
+        lbl_quantidade.grid(row=3, column=0, padx=5, pady=5, sticky='e')
+        self.entry_quantidade = ttk.Entry(self.tab_cadastro)
+        self.entry_quantidade.grid(row=3, column=1, padx=5, pady=5)
 
+        # Botão Cadastrar
+        btn_cadastrar = ttk.Button(
+            self.tab_cadastro, text='Cadastrar', command=self.cadastrar_produto)
+        btn_cadastrar.grid(row=4, column=0, columnspan=2, pady=10)
 
+    def create_estoque_widgets(self):
+        # Área de exibição do Estoque
+        self.text_estoque = tk.Text(
+            self.tab_estoque, wrap=tk.WORD, width=60, height=20)
+        self.text_estoque.grid(row=0, column=0, padx=5, pady=5)
 
-def pesquisar_produto(numero):
-    if numero in estoque:
-        for ramificacao, registros in estoque[numero].items():
-            print(f"Produtos com número {numero} (Ramificação {ramificacao}):")
-            for i, info in enumerate(registros, start=1):
-                print(f"Cadastro {i}:")
-                print(f"  Nome: {info['nome']}")
-                print(f"  Valor: R${info['valor']}")
-                print(f"  Quantidade: {info['quantidade']}")
-                print(f"  Valor Total: R${info['valor_total']}")
-                print(f"  Data de cadastro: {info['data_cadastro']}")
-                print("-" * 20)
-    else:
-        print(f"Produtos com número {numero} não encontrados no estoque.")
+        # Atualizar a exibição do estoque
+        self.update_estoque_display()
 
+    def create_pesquisa_widgets(self):
+        # Número do Produto para Pesquisa
+        lbl_pesquisa_numero = ttk.Label(
+            self.tab_pesquisa, text='Número do Produto:')
+        lbl_pesquisa_numero.grid(row=0, column=0, padx=5, pady=5, sticky='e')
+        self.entry_pesquisa_numero = ttk.Entry(self.tab_pesquisa)
+        self.entry_pesquisa_numero.grid(row=0, column=1, padx=5, pady=5)
 
+        # Botão Pesquisar
+        btn_pesquisar = ttk.Button(
+            self.tab_pesquisa, text='Pesquisar', command=self.pesquisar_produto)
+        btn_pesquisar.grid(row=1, column=0, columnspan=2, pady=10)
 
+        # Área de exibição do resultado da pesquisa
+        self.text_pesquisa_resultado = tk.Text(
+            self.tab_pesquisa, wrap=tk.WORD, width=60, height=20)
+        self.text_pesquisa_resultado.grid(row=2, column=3, padx=5, pady=5)
 
+    def carregar_estoque(self):
+        try:
+            with open('estoque.csv', newline='') as csvfile:
+                reader = csv.DictReader(csvfile)
+                for row in reader:
+                    numero = int(row['Numero'])
+                    ramificacao = int(row.get('Ramificacao', 1))
+                    self.estoque.setdefault(numero, {}).setdefault(ramificacao, []).append({
+                        'nome': row['Nome'],
+                        'valor': float(row['Valor']),
+                        'quantidade': int(row['Quantidade']),
+                        'valor_total': float(row['ValorTotal']),
+                        'data_cadastro': date.fromisoformat(row['DataCadastro'])
+                    })
+        except FileNotFoundError:
+            pass
+        except Exception as e:
+            messagebox.showerror("Erro", f"Erro ao carregar o estoque: {e}")
 
-def editar_produto(numero, ramificacao):
-    if numero in estoque and ramificacao in estoque[numero]:
-        print(f"Editar Produto {numero} (Ramificação {ramificacao}):")
-        print("1. Editar Nome")
-        print("2. Editar Valor")
-        print("3. Editar Quantidade")
-        print("4. Voltar")
+    def salvar_csv(self):
+        with open('estoque.csv', 'w', newline='') as csvfile:
+            fieldnames = ['Numero', 'Nome', 'Valor', 'Quantidade',
+                          'ValorTotal', 'DataCadastro', 'Ramificacao']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
 
-        escolha = input("Escolha uma opção (1/2/3/4): ")
+            for numero, ramificacoes in self.estoque.items():
+                for ramificacao, registros in ramificacoes.items():
+                    for info in registros:
+                        writer.writerow({'Numero': numero,
+                                         'Nome': info['nome'],
+                                         'Valor': info['valor'],
+                                         'Quantidade': info['quantidade'],
+                                         'ValorTotal': info['valor_total'],
+                                         'DataCadastro': info['data_cadastro'].isoformat(),
+                                         'Ramificacao': ramificacao})
 
-        if escolha == '1':
-            novo_nome = input("Novo Nome: ")
-            for produto in estoque[numero][ramificacao]:
-                produto['nome'] = novo_nome
-            print("Nome editado com sucesso.")
-            salvar_csv()
-        elif escolha == '2':
-            novo_valor_str = input("Novo Valor (use ponto como separador decimal): ")
-            novo_valor = float(novo_valor_str.replace(',', '.'))
-            for produto in estoque[numero][ramificacao]:
-                produto['valor'] = novo_valor
-                produto['valor_total'] = novo_valor * produto['quantidade']
-            print("Valor editado com sucesso.")
-            salvar_csv()
-        elif escolha == '3':
-            nova_quantidade = int(input("Nova Quantidade: "))
-            for produto in estoque[numero][ramificacao]:
-                produto['quantidade'] = nova_quantidade
-                produto['valor_total'] = produto['valor'] * nova_quantidade
-            print("Quantidade editada com sucesso.")
-            salvar_csv()
-        elif escolha == '4':
-            print("Voltando ao menu principal.")
+            historico_df = pd.DataFrame(self.historico_estoque)
+            historico_df.to_csv('historico_estoque.csv', index=False)
+
+    def cadastrar_produto(self):
+        try:
+            numero = int(self.entry_numero.get())
+            nome = self.entry_nome.get()
+            valor = float(self.entry_valor.get())
+            quantidade = int(self.entry_quantidade.get())
+
+            valor_total = valor * quantidade
+            data_atual = date.today()
+            ramificacao = max(self.estoque.get(numero, {}), default=0) + 1
+
+            self.estoque.setdefault(numero, {}).setdefault(ramificacao, []).append({
+                'nome': nome,
+                'valor': valor,
+                'quantidade': quantidade,
+                'valor_total': valor_total,
+                'data_cadastro': data_atual
+            })
+
+            self.historico_estoque.append({
+                'numero': numero,
+                'ramificacao': ramificacao,
+                'nome': nome,
+                'valor': valor,
+                'quantidade': quantidade,
+                'valor_total': valor_total,
+                'data_cadastro': data_atual
+            })
+
+            messagebox.showinfo("Sucesso", f"Produto {
+                                numero} ({nome}) cadastrado com sucesso.")
+            self.salvar_csv()
+            self.update_estoque_display()
+
+        except ValueError:
+            messagebox.showerror("Erro", "Por favor, insira valores válidos.")
+
+    def update_estoque_display(self):
+        self.text_estoque.delete(1.0, tk.END)  # Limpar o texto atual
+
+        if self.estoque:
+            for numero, ramificacoes in self.estoque.items():
+                self.text_estoque.insert(tk.END, f"Produto {numero}: \n")
+
+                for ramificacao, registros in ramificacoes.items():
+                    self.text_estoque.insert(
+                        tk.END, f"  Ramificação {ramificacao}: \n")
+
+                    for info in registros:
+                        self.text_estoque.insert(
+                            tk.END, f"    Nome: {info['nome']}\n")
+                        self.text_estoque.insert(
+                            tk.END, f"    Valor: R${info['valor']}\n")
+                        self.text_estoque.insert(tk.END, f"    Quantidade: {
+                                                 info['quantidade']}\n")
+                        self.text_estoque.insert(tk.END, f"    Valor Total: R${
+                                                 info['valor_total']}\n")
+                        self.text_estoque.insert(tk.END, f"    Data de Cadastro: {
+                                                 info['data_cadastro']}\n")
+                        self.text_estoque.insert(tk.END, "-" * 20 + "\n")
+
+                self.text_estoque.insert(tk.END, "=" * 20 + "\n")
         else:
-            print("Opção inválida. Tente novamente.")
-    else:
-        print(f"Produto {numero} (Ramificação {ramificacao}) não encontrado no estoque.")
+            self.text_estoque.insert(tk.END, "O estoque está vazio.")
+
+    def pesquisar_produto(self):
+        try:
+            numero_pesquisa = int(self.entry_pesquisa_numero.get())
+
+            # Limpar a área de resultado
+            self.text_pesquisa_resultado.delete(1.0, tk.END)
+
+            # Pesquisar o produto no estoque
+            if numero_pesquisa in self.estoque:
+                for ramificacao, registros in self.estoque[numero_pesquisa].items():
+                    for info in registros:
+                        self.text_pesquisa_resultado.insert(
+                            tk.END, f"Nome: {info['nome']}\n")
+                        self.text_pesquisa_resultado.insert(
+                            tk.END, f"Valor: R${info['valor']}\n")
+                        self.text_pesquisa_resultado.insert(
+                            tk.END, f"Quantidade: {info['quantidade']}\n")
+                        self.text_pesquisa_resultado.insert(
+                            tk.END, f"Valor Total: R${info['valor_total']}\n")
+                        self.text_pesquisa_resultado.insert(
+                            tk.END, f"Data de Cadastro: {info['data_cadastro']}\n")
+                        self.text_pesquisa_resultado.insert(
+                            tk.END, "-" * 20 + "\n")
+
+                self.text_pesquisa_resultado.insert(tk.END, "=" * 20 + "\n")
+            else:
+                self.text_pesquisa_resultado.insert(
+                    tk.END, f"Produto {numero_pesquisa} não encontrado no estoque.\n")
+
+        except ValueError:
+            messagebox.showerror(
+                "Erro", "Por favor, insira um número de produto válido.")
 
 
-        
-
-
-def salvar_csv():
-    with open('estoque.csv', 'w', newline='') as csvfile:
-        fieldnames = ['Numero', 'Nome', 'Valor', 'Quantidade', 'ValorTotal', 'DataCadastro', 'Ramificacao']
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-
-        writer.writeheader()
-
-        for numero, ramificacoes in estoque.items():
-            for ramificacao, registros in ramificacoes.items():
-                for info in registros:
-                    writer.writerow({'Numero': numero,
-                                     'Nome': info['nome'],
-                                     'Valor': info['valor'],
-                                     'Quantidade': info['quantidade'],
-                                     'ValorTotal': info['valor_total'],
-                                     'DataCadastro': info['data_cadastro'].isoformat(),
-                                     'Ramificacao': ramificacao})
-
-    with open('historico_estoque.csv', 'w', newline='') as historico_file:
-        historico_fieldnames = ['Numero', 'Ramificacao', 'Nome', 'Valor', 'Quantidade', 'ValorTotal', 'DataCadastro']
-        historico_writer = csv.DictWriter(historico_file, fieldnames=historico_fieldnames)
-
-        historico_writer.writeheader()
-
-        for item in historico_estoque:
-            historico_writer.writerow({'Numero': item['numero'],
-                                       'Ramificacao': item['ramificacao'],
-                                       'Nome': item['nome'],
-                                       'Valor': item['valor'],
-                                       'Quantidade': item['quantidade'],
-                                       'ValorTotal': item['valor_total'],
-                                       'DataCadastro': item['data_cadastro'].isoformat()})
-
-# Carregar o estoque existente
-carregar_estoque()
-
-# Loop para cadastrar produtos em tempo real
-while True:
-    print("\nOpções:")
-    print("1. Cadastrar Produto")
-    print("2. Exibir Estoque")
-    print("3. Pesquisar Produto")
-    print("4. Editar Produto")
-    print("5. Sair")
-
-    escolha = input("Escolha uma opção (1/2/3/4/5): ")
-
-    if escolha == '1':
-        while True:
-            try:
-                numero = int(input("Número do Produto: "))
-                break  # Saia do loop se a conversão for bem-sucedida
-            except ValueError:
-                print("Por favor, insira um número válido.")
-
-        nome = input("Nome do Produto: ")
-        valor_str = input("Valor do Produto (use ponto como separador decimal): ")
-
-        # Loop para garantir que o usuário forneça uma quantidade válida
-        while True:
-            try:
-                quantidade = int(input("Quantidade do Produto: "))
-                break  # Saia do loop se a conversão for bem-sucedida
-            except ValueError:
-                print("Por favor, insira uma quantidade válida.")
-
-        cadastrar_produto(numero, nome, valor_str, quantidade)
-    elif escolha == '2':
-        exibir_estoque()
-    elif escolha == '3':
-        numero_pesquisa = int(input("Digite o número do produto para pesquisa: "))
-        pesquisar_produto(numero_pesquisa)
-    elif escolha == '4':
-        numero_edicao = int(input("Digite o número do produto para edição: "))
-        ramificacao_edicao = int(input("Digite a ramificação do produto para edição: "))
-        editar_produto(numero_edicao, ramificacao_edicao)
-    elif escolha == '5':
-        print("Saindo do programa.")
-        break
-    else:
-        print("Opção inválida. Tente novamente.")
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = EstoqueApp(root)
+    root.mainloop()
