@@ -400,9 +400,14 @@ class EstoqueApp:
             # Fechar a janela de edição
             janela_edicao.destroy()
 
+            # Exibir mensagem de sucesso
+            mensagem = f"Produto {numero} - Ramificação {ramificacao} editado com sucesso."
+            messagebox.showinfo("Sucesso", mensagem)
+
         except ValueError:
-            messagebox.showerror(
-                "Erro", "Por favor, insira valores válidos.")
+            # Exibir mensagem de erro
+            messagebox.showerror("Erro", "Por favor, insira valores válidos.")
+
     def abrir_janela_exclusao(self):
         try:
             numero_exclusao = int(self.entry_exclusao_numero.get())
