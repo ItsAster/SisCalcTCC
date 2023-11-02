@@ -75,13 +75,15 @@ class EstoqueApp:
             self.tab_cadastro, text='Cadastrar', command=self.cadastrar_produto)
         btn_cadastrar.grid(row=4, column=0, columnspan=2, pady=10)
 
-
     def create_estoque_widgets(self):
         self.text_estoque = tk.Text(
-            self.tab_estoque, wrap=tk.WORD, width=80, height=30)  # Ajuste os valores width e height conforme necessário
-        self.text_estoque.grid(row=0, column=0, padx=5, pady=5, sticky='nsew')  # Adicione sticky='nsew'
+            # Ajuste os valores width e height conforme necessário
+            self.tab_estoque, wrap=tk.WORD, width=80, height=30)
+        self.text_estoque.grid(row=0, column=0, padx=5,
+                               pady=5, sticky='nsew')  # Adicione sticky='nsew'
 
-        self.tab_estoque.rowconfigure(0, weight=1)  # Adicione rowconfigure para permitir expansão vertical
+        # Adicione rowconfigure para permitir expansão vertical
+        self.tab_estoque.rowconfigure(0, weight=1)
 
         self.update_estoque_display()
 
@@ -97,7 +99,8 @@ class EstoqueApp:
         btn_pesquisar.grid(row=0, column=2, pady=10)
 
         self.text_pesquisa_resultado = tk.Text(
-            self.tab_pesquisa, wrap=tk.WORD, width=80, height=30)  # Ajuste os valores width e height conforme necessário
+            # Ajuste os valores width e height conforme necessário
+            self.tab_pesquisa, wrap=tk.WORD, width=80, height=30)
         self.text_pesquisa_resultado.grid(
             row=1, column=0, columnspan=3, padx=5, pady=5, sticky='nsew')  # Adicione sticky='nsew'
 
@@ -106,11 +109,16 @@ class EstoqueApp:
         scrollbar.grid(row=1, column=3, sticky='ns')
         self.text_pesquisa_resultado['yscrollcommand'] = scrollbar.set
 
-        self.tab_pesquisa.rowconfigure(1, weight=1)  # Adicione rowconfigure para permitir expansão vertical
-        self.tab_pesquisa.columnconfigure(0, weight=1)  # Adicione columnconfigure para permitir expansão horizontal
-        self.tab_pesquisa.columnconfigure(1, weight=1)  # Adicione columnconfigure para permitir expansão horizontal
-        self.tab_pesquisa.columnconfigure(2, weight=1)  # Adicione columnconfigure para permitir expansão horizontal
-        self.tab_pesquisa.columnconfigure(3, weight=1)  # Adicione columnconfigure para permitir expansão horizontal
+        # Adicione rowconfigure para permitir expansão vertical
+        self.tab_pesquisa.rowconfigure(1, weight=1)
+        # Adicione columnconfigure para permitir expansão horizontal
+        self.tab_pesquisa.columnconfigure(0, weight=1)
+        # Adicione columnconfigure para permitir expansão horizontal
+        self.tab_pesquisa.columnconfigure(1, weight=1)
+        # Adicione columnconfigure para permitir expansão horizontal
+        self.tab_pesquisa.columnconfigure(2, weight=1)
+        # Adicione columnconfigure para permitir expansão horizontal
+        self.tab_pesquisa.columnconfigure(3, weight=1)
 
     def create_edicao_widgets(self):
         lbl_edicao_numero = ttk.Label(
@@ -153,12 +161,33 @@ class EstoqueApp:
             with open('estoque.csv', newline='') as csvfile:
                 reader = csv.DictReader(csvfile)
                 for row in reader:
-                    self.adicionar_produto_do_csv(row)
+                    try:
+                        # Tentar converter os valores para os tipos esperados
+                        numero = int(row['Numero'])
+                        ramificacao = int(row['Ramificacao'])
+                        nome = row['Nome']
+                        valor = float(row['Valor'].replace(',', '.'))  # Substituir vírgula por ponto
+                        quantidade = int(row['Quantidade'])
+                        valor_total = float(row['ValorTotal'].replace(',', '.'))  # Substituir vírgula por ponto
+                        data_cadastro = date.fromisoformat(row['DataCadastro'])
+
+                        # Adicionar o produto ao estoque
+                        self.estoque.setdefault(numero, {}).setdefault(ramificacao, []).append({
+                            'nome': nome,
+                            'valor': valor,
+                            'quantidade': quantidade,
+                            'valor_total': valor_total,
+                            'data_cadastro': data_cadastro
+                        })
+                    except ValueError as e:
+                        # Tratar exceção de conversão
+                        messagebox.showerror("Erro", f"Erro ao converter valor: {e}")
+
         except FileNotFoundError:
             pass
         except Exception as e:
-            messagebox.showerror(
-                "Erro", f"Erro ao carregar o estoque: {e}")
+            messagebox.showerror("Erro", f"Erro ao carregar o estoque: {e}")
+
 
     def adicionar_produto_do_csv(self, row):
         numero = int(row['Numero'])
@@ -181,30 +210,37 @@ class EstoqueApp:
                         'Numero': numero,
                         'Ramificacao': ramificacao,
                         'Nome': info['nome'],
-                        'Valor': info['valor'],
+                        # Substituir ponto por vírgula
+                        'Valor': str(info['valor']).replace('.', ','),
                         'Quantidade': info['quantidade'],
-                        'ValorTotal': info['valor_total'],
+                        # Substituir ponto por vírgula
+                        'ValorTotal': str(info['valor_total']).replace('.', ','),
                         'DataCadastro': info['data_cadastro'].isoformat()
                     })
 
-        # Verificar se há dados antes de criar o DataFrame
         if dados_organizados:
             df = pd.DataFrame(dados_organizados)
             df.sort_values(by=['Numero', 'Ramificacao'], inplace=True)
+
+            # Substituir ponto por vírgula nas colunas de Valor e ValorTotal
+            df['Valor'] = df['Valor'].str.replace('.', ',')
+            df['ValorTotal'] = df['ValorTotal'].str.replace('.', ',')
+
             df.to_csv('estoque.csv', index=False)
 
             historico_df = pd.DataFrame(self.historico_estoque)
             historico_df.to_csv('historico_estoque.csv', index=False)
         else:
-            # Se não houver dados, criar DataFrames vazios
             pd.DataFrame().to_csv('estoque.csv', index=False)
-            pd.DataFrame(self.historico_estoque).to_csv('historico_estoque.csv', index=False)
+            pd.DataFrame(self.historico_estoque).to_csv(
+                'historico_estoque.csv', index=False)
 
     def cadastrar_produto(self):
         try:
             numero = int(self.entry_numero.get())
             nome = self.entry_nome.get()
-            valor = float(self.entry_valor.get())
+            valor = float(self.entry_valor.get().replace(
+                ',', '.'))  # Substituir vírgula por ponto
             quantidade = int(self.entry_quantidade.get())
 
             valor_total = valor * quantidade
@@ -250,6 +286,7 @@ class EstoqueApp:
 
         except ValueError:
             messagebox.showerror("Erro", "Por favor, insira valores válidos.")
+
     def update_estoque_display(self):
         self.text_estoque.delete(1.0, tk.END)
 
@@ -298,7 +335,6 @@ class EstoqueApp:
         else:
             self.text_estoque.insert(tk.END, "O estoque está vazio.")
 
-
     def pesquisar_produto(self):
         try:
             numero_pesquisa = int(self.entry_pesquisa_numero.get())
@@ -306,28 +342,39 @@ class EstoqueApp:
 
             if numero_pesquisa in self.estoque:
                 for ramificacao, registros in self.estoque[numero_pesquisa].items():
-                    info = registros[0]
-                    self.text_pesquisa_resultado.insert(
-                        tk.END, f"Nome: {info['nome']}\n")
-                    self.text_pesquisa_resultado.insert(
-                        tk.END, f"Valor: R${info['valor']}\n")
-                    self.text_pesquisa_resultado.insert(
-                        tk.END, f"Quantidade: {info['quantidade']}\n")
-                    self.text_pesquisa_resultado.insert(
-                        tk.END, f"Valor Total: R${info['valor_total']}\n")
-                    self.text_pesquisa_resultado.insert(
-                        tk.END, f"Data de Cadastro: {info['data_cadastro']}\n")
-                    self.text_pesquisa_resultado.insert(
-                        tk.END, "-" * 20 + "\n")
+                    for info in registros:
+                        self.text_pesquisa_resultado.insert(tk.END, f"Nome: {info['nome']}\n")
+                        self.text_pesquisa_resultado.insert(tk.END, f"Valor: R${info['valor']}\n")
+                        self.text_pesquisa_resultado.insert(tk.END, f"Quantidade: {info['quantidade']}\n")
+                        self.text_pesquisa_resultado.insert(tk.END, f"Valor Total: R${info['valor_total']}\n")
+                        self.text_pesquisa_resultado.insert(tk.END, f"Data de Cadastro: {info['data_cadastro']}\n")
+                        self.text_pesquisa_resultado.insert(tk.END, "-" * 20 + "\n")
 
                 self.text_pesquisa_resultado.insert(tk.END, "=" * 20 + "\n")
+                
+                # Exibir detalhes de valor total e quantidade total
+                self.exibir_detalhes_pesquisa(numero_pesquisa)
+
             else:
-                self.text_pesquisa_resultado.insert(
-                    tk.END, f"Produto {numero_pesquisa} não encontrado no estoque.\n")
+                self.text_pesquisa_resultado.insert(tk.END, f"Produto {numero_pesquisa} não encontrado no estoque.\n")
 
         except ValueError:
-            messagebox.showerror(
-                "Erro", "Por favor, insira um número de produto válido.")
+            messagebox.showerror("Erro", "Por favor, insira um número de produto válido.")
+
+    def exibir_detalhes_pesquisa(self, numero_pesquisa):
+        valor_total_produto = 0
+        quantidade_total_produto = 0
+
+        for ramificacao, registros in self.estoque[numero_pesquisa].items():
+            for info in registros:
+                valor_total_produto += info['valor_total']
+                quantidade_total_produto += info['quantidade']
+
+        self.text_pesquisa_resultado.insert(tk.END, f"Valor total referente ao Produto {numero_pesquisa}: R${valor_total_produto:.2f}\n")
+        self.text_pesquisa_resultado.insert(tk.END, f"Quantidade total referente ao Produto {numero_pesquisa}: {quantidade_total_produto}\n")
+        self.text_pesquisa_resultado.insert(tk.END, "=" * 20 + "\n")
+
+
     def abrir_janela_edicao(self):
         try:
             numero_edicao = int(self.entry_edicao_numero.get())
@@ -344,6 +391,7 @@ class EstoqueApp:
         except ValueError:
             messagebox.showerror(
                 "Erro", "Por favor, insira números de produto e ramificação válidos.")
+
     def abrir_janela_edicao_produto(self, numero, ramificacao, produto):
         janela_edicao = tk.Toplevel(self.root)
         janela_edicao.title(
@@ -409,7 +457,8 @@ class EstoqueApp:
             janela_edicao.destroy()
 
             # Exibir mensagem de sucesso
-            mensagem = f"Produto {numero} - Ramificação {ramificacao} editado com sucesso."
+            mensagem = f"Produto {
+                numero} - Ramificação {ramificacao} editado com sucesso."
             messagebox.showinfo("Sucesso", mensagem)
 
         except ValueError:
