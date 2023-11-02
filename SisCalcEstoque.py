@@ -20,28 +20,34 @@ class EstoqueApp:
         self.create_widgets()
 
     def create_widgets(self):
-        self.notebook = ttk.Notebook(self.root)
-        self.notebook.pack(padx=10, pady=10, expand=True, fill='both')
+        self.create_notebook()
 
+        # Adicionar as guias ao notebook
         self.tab_cadastro = ttk.Frame(self.notebook)
-        self.notebook.add(self.tab_cadastro, text='Cadastrar Produto')
-        self.create_cadastro_widgets()
+        self.notebook.add(self.tab_cadastro, text='Cadastro')
 
         self.tab_estoque = ttk.Frame(self.notebook)
-        self.notebook.add(self.tab_estoque, text='Exibir Estoque')
-        self.create_estoque_widgets()
+        self.notebook.add(self.tab_estoque, text='Estoque')
 
         self.tab_pesquisa = ttk.Frame(self.notebook)
-        self.notebook.add(self.tab_pesquisa, text='Pesquisar Produto')
-        self.create_pesquisa_widgets()
+        self.notebook.add(self.tab_pesquisa, text='Pesquisa')
 
         self.tab_edicao = ttk.Frame(self.notebook)
-        self.notebook.add(self.tab_edicao, text='Editar Produto')
-        self.create_edicao_widgets()
+        self.notebook.add(self.tab_edicao, text='Edição')
 
         self.tab_exclusao = ttk.Frame(self.notebook)
-        self.notebook.add(self.tab_exclusao, text='Excluir Produto')
+        self.notebook.add(self.tab_exclusao, text='Exclusão')
+
+        # Chamar métodos para criar widgets em cada guia
+        self.create_cadastro_widgets()
+        self.create_estoque_widgets()
+        self.create_pesquisa_widgets()
+        self.create_edicao_widgets()
         self.create_exclusao_widgets()
+
+    def create_notebook(self):
+        self.notebook = ttk.Notebook(self.root)
+        self.notebook.pack(padx=10, pady=10, expand=True, fill='both')
 
     def create_cadastro_widgets(self):
         lbl_numero = ttk.Label(self.tab_cadastro, text='Número do Produto:')
@@ -68,6 +74,7 @@ class EstoqueApp:
         btn_cadastrar = ttk.Button(
             self.tab_cadastro, text='Cadastrar', command=self.cadastrar_produto)
         btn_cadastrar.grid(row=4, column=0, columnspan=2, pady=10)
+
 
     def create_estoque_widgets(self):
         self.text_estoque = tk.Text(
@@ -185,7 +192,6 @@ class EstoqueApp:
             pd.DataFrame().to_csv('estoque.csv', index=False)
             pd.DataFrame(self.historico_estoque).to_csv('historico_estoque.csv', index=False)
 
-
     def cadastrar_produto(self):
         try:
             numero = int(self.entry_numero.get())
@@ -236,7 +242,6 @@ class EstoqueApp:
 
         except ValueError:
             messagebox.showerror("Erro", "Por favor, insira valores válidos.")
-
     def update_estoque_display(self):
         self.text_estoque.delete(1.0, tk.END)
 
@@ -285,6 +290,7 @@ class EstoqueApp:
         else:
             self.text_estoque.insert(tk.END, "O estoque está vazio.")
 
+
     def pesquisar_produto(self):
         try:
             numero_pesquisa = int(self.entry_pesquisa_numero.get())
@@ -314,7 +320,6 @@ class EstoqueApp:
         except ValueError:
             messagebox.showerror(
                 "Erro", "Por favor, insira um número de produto válido.")
-
     def abrir_janela_edicao(self):
         try:
             numero_edicao = int(self.entry_edicao_numero.get())
@@ -331,7 +336,6 @@ class EstoqueApp:
         except ValueError:
             messagebox.showerror(
                 "Erro", "Por favor, insira números de produto e ramificação válidos.")
-
     def abrir_janela_edicao_produto(self, numero, ramificacao, produto):
         janela_edicao = tk.Toplevel(self.root)
         janela_edicao.title(
@@ -396,26 +400,13 @@ class EstoqueApp:
             # Fechar a janela de edição
             janela_edicao.destroy()
 
-        except ValueError:
-            messagebox.showerror(
-                "Erro", "Por favor, insira valores válidos.")
-
-    def abrir_janela_exclusao(self):
-        try:
-            numero_exclusao = int(self.entry_exclusao_numero.get())
-            ramificacao_exclusao = int(self.entry_exclusao_ramificacao.get())
-
-            if numero_exclusao in self.estoque and ramificacao_exclusao in self.estoque[numero_exclusao]:
-                produto_para_excluir = self.estoque[numero_exclusao][ramificacao_exclusao][0]
-                self.excluir_produto(
-                    numero_exclusao, ramificacao_exclusao, produto_para_excluir)
-            else:
-                messagebox.showerror(
-                    "Erro", "Produto não encontrado para exclusão.")
+            # Exibir mensagem de sucesso
+            mensagem = f"Produto {numero} - Ramificação {ramificacao} editado com sucesso."
+            messagebox.showinfo("Sucesso", mensagem)
 
         except ValueError:
-            messagebox.showerror(
-                "Erro", "Por favor, insira números de produto e ramificação válidos.")
+            # Exibir mensagem de erro
+            messagebox.showerror("Erro", "Por favor, insira valores válidos.")
 
     def abrir_janela_exclusao(self):
         try:
