@@ -78,8 +78,10 @@ class EstoqueApp:
 
     def create_estoque_widgets(self):
         self.text_estoque = tk.Text(
-            self.tab_estoque, wrap=tk.WORD, width=60, height=20)
-        self.text_estoque.grid(row=0, column=0, padx=5, pady=5)
+            self.tab_estoque, wrap=tk.WORD, width=80, height=30)  # Ajuste os valores width e height conforme necessário
+        self.text_estoque.grid(row=0, column=0, padx=5, pady=5, sticky='nsew')  # Adicione sticky='nsew'
+
+        self.tab_estoque.rowconfigure(0, weight=1)  # Adicione rowconfigure para permitir expansão vertical
 
         self.update_estoque_display()
 
@@ -95,14 +97,20 @@ class EstoqueApp:
         btn_pesquisar.grid(row=0, column=2, pady=10)
 
         self.text_pesquisa_resultado = tk.Text(
-            self.tab_pesquisa, wrap=tk.WORD, width=60, height=20)
+            self.tab_pesquisa, wrap=tk.WORD, width=80, height=30)  # Ajuste os valores width e height conforme necessário
         self.text_pesquisa_resultado.grid(
-            row=1, column=0, columnspan=3, padx=5, pady=5)
+            row=1, column=0, columnspan=3, padx=5, pady=5, sticky='nsew')  # Adicione sticky='nsew'
 
         scrollbar = ttk.Scrollbar(
             self.tab_pesquisa, command=self.text_pesquisa_resultado.yview)
         scrollbar.grid(row=1, column=3, sticky='ns')
         self.text_pesquisa_resultado['yscrollcommand'] = scrollbar.set
+
+        self.tab_pesquisa.rowconfigure(1, weight=1)  # Adicione rowconfigure para permitir expansão vertical
+        self.tab_pesquisa.columnconfigure(0, weight=1)  # Adicione columnconfigure para permitir expansão horizontal
+        self.tab_pesquisa.columnconfigure(1, weight=1)  # Adicione columnconfigure para permitir expansão horizontal
+        self.tab_pesquisa.columnconfigure(2, weight=1)  # Adicione columnconfigure para permitir expansão horizontal
+        self.tab_pesquisa.columnconfigure(3, weight=1)  # Adicione columnconfigure para permitir expansão horizontal
 
     def create_edicao_widgets(self):
         lbl_edicao_numero = ttk.Label(
@@ -468,5 +476,6 @@ class EstoqueApp:
 
 if __name__ == "__main__":
     root = tk.Tk()
+    root.geometry("800x600")  # Definindo o tamanho da janela
     app = EstoqueApp(root)
     root.mainloop()
