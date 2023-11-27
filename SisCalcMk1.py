@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 import xml.etree.ElementTree as ET
 import pandas as pd
+import time
 
 # Dicionário de namespaces
 namespaces = {'nfe': 'http://www.portalfiscal.inf.br/nfe'}
@@ -290,6 +291,178 @@ def visualizar_dados(csv_file=None, text_widget=None):
         text_widget.insert(
             tk.END, f"O arquivo '{csv_file}' está vazio.")
 
+
+
+def calculo_ICMS(barra_progresso, text_widget=None):
+    try:
+        # Carregando os dados das planilhas
+        compras_df = pd.read_csv('Compras_Teste_Calculo_21-11.csv', sep=';', decimal=',', thousands='.', encoding='latin1')
+        vendas_df = pd.read_csv('Vendas_Teste_Calculo_21-11.csv', sep=';', decimal=',', thousands='.', encoding='latin1')
+
+        # Removendo "R$" do campo "BCST Unitaria" e substituindo ',' por '.'
+        compras_df['BCST Unitaria'] = pd.to_numeric(compras_df['BCST Unitaria'].replace('[^\d.,]', '', regex=True).str.replace(',', '.'), errors='coerce')
+        vendas_df['Valor Unitario da Venda'] = pd.to_numeric(vendas_df['Valor Unitario da Venda'].replace('[^\d.,]', '', regex=True).str.replace(',', '.'), errors='coerce')
+
+        # Inicializando a variável de ramificação
+        ramificacao = 0
+
+        # Criar um DataFrame para armazenar os resultados
+        resultado_df = pd.DataFrame(columns=[
+            'Letra D', 'Sequencial da Linha', 'Chave de Acesso da NF Venda', 'Nr do Item na NF da Venda',
+            'Fator de Conversão', 'Código do Produto na NFe de Venda', 'Valor Unitário de Venda',
+            'Quantidade Vendida', 'Chave de Acesso da Compra', 'Nr do Item na NFe da Compra',
+            'Código Interno do Produto na NFe Compra', 'BCST Unitária', 'Diferença', 'Valor do ICMS A Restituir ou Complementar',
+            'Período de Escrituração da NFe de Compra AAAAMM'
+        ])
+
+        # Variável para sequenciar as linhas
+        sequencial_linha = 1
+
+        # Iterando sobre as linhas da tabela de vendas
+        for _, venda_row in vendas_df.iterrows():
+            calculo_icmsst = 0
+            contador = 0
+            nome_do_produto = venda_row['Descricao do Produto Vendido']
+            print(nome_do_produto)
+
+            # 2º - Verificar se o valor da coluna 'Sequencial EAN' do produto selecionado da 1ª regra da tabela Vendas_Testes_CSV.csv é encontrado na coluna 'Sequencial EAN' da planilha Compras_Testes_Valores_3_CSV.csv são iguais
+            sequencial_ean_venda = venda_row['Sequencial EAN']
+            compras_selecionadas = compras_df[compras_df['Sequencial EAN'] == sequencial_ean_venda]
+            lista_compras_selecionadas = [compras_selecionadas]
+
+            # Verificando se a compra foi encontrada
+            if compras_selecionadas.empty:
+                print(f"Produto {nome_do_produto} com Sequencial EAN {sequencial_ean_venda} não encontrado no estoque")
+                continue
+
+            # 3º - Se a 3ª regra passar, verificar se o valor da coluna 'Informacoes para o Calculo do Estoque da Venda' do produto selecionado da 1ª regra da planilha Vendas_Testes_CSV.csv for igual a 'consumidor final'
+            if venda_row['Informacoes para o Calculo do Estoque da Venda'] != 'consumidor final':
+                print(f"Produto {nome_do_produto} não foi vendido para consumidor final")
+                continue
+
+            # 4º - Se a 4ª regra passar, verificar se o valor da coluna 'Produto ST?' do produto selecionado da 1ª regra da planilha Vendas_Testes_CSV.csv for igual a 'Sim'
+            if venda_row['Produto ST?'] != 'sim':
+                print(f"Produto {nome_do_produto} não é Produto ST")
+                continue
+
+            # 5º - Verificar se o valor da coluna 'Data Emissao da Venda' do produto selecionado da 1ª regra é maior que o valor da coluna 'Data Emissao da Compra' dos produtos selecionados com EAN igual na 2ª regra
+            data_emissao_venda = pd.to_datetime(venda_row['Data da Emissao da Venda'], format='mixed', dayfirst=True)
+            compras_selecionadas = compras_selecionadas[pd.to_datetime(compras_selecionadas['Data da Emissao da Compra'], format='mixed', dayfirst=True) < data_emissao_venda]
+            print('Passou AQUI')
+            # 6º - Calcular a diferença de valores
+            quantidade_venda = venda_row['Quantidade Vendida']
+            for index_compras, compra_row in compras_selecionadas.iterrows():
+                if quantidade_venda <= 0:
+                    index_compras = index_compras - 1
+                    print("For 2 Break")
+                    print(index_compras)
+                    break
+                icmsst_total = 0
+                print(f"index_compras = {index_compras}")
+                print(compra_row)
+                quantidade_compra = compra_row['Quantidade em Unidades']
+                print(f"Quantidade de produto COMPRA = {quantidade_compra} - Antes do While")
+                print(f"Quantidade de produto VENDA = {quantidade_venda} - Antes do While")
+
+                # aqui valida a entrada da quantida de venda
+                while quantidade_venda > 0 and quantidade_compra > 0:
+                    compra_especifica_ramificacao = compras_df.loc[compras_df['Ramificacao'] == ramificacao]
+                    print(compra_especifica_ramificacao)
+
+                    if quantidade_compra < quantidade_venda:
+                        vendaCalculo = quantidade_compra
+                    else:
+                        vendaCalculo = quantidade_venda
+                    diferenca_valores = round(compra_row['BCST Unitaria'] - venda_row['Valor Unitario da Venda'], 2)
+                    # quantidade = min(quantidade_compra, quantidade_venda)
+                    novaQuantidadeProdutoCompra = quantidade_compra - quantidade_venda
+
+                    if novaQuantidadeProdutoCompra < 0:
+                        novaQuantidadeProdutoCompra = 0
+                    else:
+                        index_compras = index_compras
+                    # quantidade_compra -= quantidade
+                    compras_df.loc[index_compras, 'Quantidade em Unidades'] = novaQuantidadeProdutoCompra
+                    compras_df.to_csv('Compras_Teste_Calculo_21-11.csv', index=False)
+                    quantidade_venda = quantidade_venda - quantidade_compra
+                    if quantidade_venda < 0:
+                        quantidade_venda = 0
+                    aliquota = venda_row['Aliquota Interna']
+                    print(f"{diferenca_valores} * {vendaCalculo} * {aliquota}")
+                    calculo_icmsst = round((diferenca_valores * vendaCalculo * (venda_row['Aliquota Interna']) / 100), 2)
+                    print(calculo_icmsst)
+
+                    if contador == 0:
+                        guardar_calculo_icmsst = calculo_icmsst
+                        contador = contador + 1
+                    else:
+                        guardar_calculo_icmsst = guardar_calculo_icmsst + calculo_icmsst
+
+                    if novaQuantidadeProdutoCompra == 0 and ramificacao >= 0:
+                        ramificacao = ramificacao + 1
+                        print("While Break")
+                        break
+                    print('///// Teste While ///////')
+
+                progresso_atual = int((index_compras / len(compras_selecionadas)) * 100)
+                barra_progresso["value"] = progresso_atual
+                barra_progresso.update_idletasks()
+                barra_progresso.step(10)  # Ajuste conforme necessário
+                barra_progresso.update()
+
+            if diferenca_valores > 0:
+                print(f"O produto {nome_do_produto} com valor {guardar_calculo_icmsst} pode ser ressarcido na receita")
+            else:
+                calculo_icmsst = calculo_icmsst * -1
+                print(f"O produto {nome_do_produto} com valor {guardar_calculo_icmsst} deve ser pago para a receita")
+
+            print('///// Teste For - 2 ///////')
+
+            print('///// Teste For - 1 ///////')
+            if diferenca_valores < 0:
+                diferenca_valores = diferenca_valores * -1
+            nova_linha = pd.DataFrame({
+                'Letra D': ['D'],
+                'Sequencial da Linha': [sequencial_linha],  # Substitua 'sequencial_da_linha' pelo valor correto
+                'Chave de Acesso da NF Venda': [venda_row['Chave de Acesso da NF Venda']],
+                'Nr do Item na NF da Venda': [venda_row['Nr do Item na NFe da Venda']],
+                'Fator de Conversão': [1],
+                'Código do Produto na NFe de Venda': ['Falta no CSV - Venda'],
+                'Valor Unitário de Venda': [venda_row['Valor Unitario da Venda']],
+                'Quantidade Vendida': [venda_row['Quantidade Vendida']],
+                'Chave de Acesso da Compra': [compra_row['Chave de Acesso da Compra']],
+                'Nr do Item na NFe da Compra': [compra_row['Nr do Item na Nfe da Compra']],
+                'Código Interno do Produto na NFe Compra': [compra_row['Codigo do Produto']],
+                'BCST Unitária': [compra_row['BCST Unitaria']],
+                'Diferença': [diferenca_valores],
+                'Valor do ICMS A Restituir ou Complementar': [guardar_calculo_icmsst],
+                'Período de Escrituração da NFe de Compra AAAAMM': ['201906']
+            })
+
+            resultado_df = pd.concat([resultado_df, nova_linha], ignore_index=True, sort=False)
+
+            # Incrementa o sequencial da linha
+            sequencial_linha += 1
+
+            # Salva o DataFrame resultado_df em um arquivo CSV
+            resultado_df.to_csv('resultado.csv', index=False, sep=';', decimal=',', encoding='utf-8')
+
+        # Se tudo ocorreu bem
+        barra_progresso["value"] = 100
+        messagebox.showinfo("Sucesso", "O cálculo foi realizado com sucesso e o arquivo resultado.csv foi criado.")
+        time.sleep(0.5)
+        barra_progresso["value"] = 0
+        return True
+
+    except FileNotFoundError as e:
+        messagebox.showerror("Erro", "Arquivo não encontrado. Verifique se as planilhas estão presentes.")
+        return False
+    except Exception as e:
+        messagebox.showerror("Erro", f"Ocorreu um erro: {str(e)}")
+        return False
+
+
+
 # Função para criar a aba de visualização de dados de compras
 def criar_aba_visualizar_dados_compras():
     aba = ttk.Frame(tab_control)
@@ -338,6 +511,19 @@ def criar_aba_visualizar_dados_vendas():
     # Retornar a referência do widget para que ele possa ser acessado globalmente
     return visualizar_dados_text_vendas
 
+
+# Função para criar a aba Comparar Dados
+def criar_aba_comparar_dados():
+    aba = ttk.Frame(tab_control)
+    tab_control.add(aba, text='Calcular Restituição ICMS-ST')
+    # Criar a barra de progresso global
+    barra_progresso = ttk.Progressbar(aba, orient="horizontal", length=300, mode="determinate")
+    btn_comparar_dados = tk.Button(
+        aba, text="Calcular Restituição ICMS-ST", command=lambda: calculo_ICMS(barra_progresso))
+    barra_progresso.pack(pady=10)
+    btn_comparar_dados.pack(pady=20)
+
+
 # Criar a interface gráfica
 root = tk.Tk()
 root.title("Sistema de Cálculo")
@@ -345,11 +531,14 @@ root.title("Sistema de Cálculo")
 # Criar notebook com abas
 tab_control = ttk.Notebook(root)
 
+
+
 # Criar abas
 criar_aba_carregar_nfe_compra()
 visualizar_dados_text_compras = criar_aba_visualizar_dados_compras()
 criar_aba_carregar_nfe_venda()
 visualizar_dados_text_vendas = criar_aba_visualizar_dados_vendas()
+criar_aba_comparar_dados()
 
 # Iniciar o loop principal
 tab_control.pack(expand=1, fill='both')
