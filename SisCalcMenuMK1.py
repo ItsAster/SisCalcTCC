@@ -5,7 +5,7 @@ import re
 from tkinter import *
 from tkinter import ttk, messagebox
 
-
+# Classe que representa uma segunda tela
 class OtherScreen:
     def __init__(self, master):
         self.master = master
@@ -15,7 +15,7 @@ class OtherScreen:
         label = Label(master, text="Esta é outra tela.")
         label.pack(pady=20)
 
-
+# Classe principal que gerencia usuários
 class UserManager:
 
     def __init__(self, root):
@@ -26,36 +26,44 @@ class UserManager:
         self.style = ttk.Style()
         self.style.theme_use("clam")
         self.root.configure(bg=self.bg_color)
-        self.other_screens = []
+        self.other_screens = [] # Lista para armazenar instâncias de "Outra Tela"
         self.notebook = ttk.Notebook(root)
 
+        # Frames para diferentes operações (Login, Registro, Edição, Exclusão)
         self.login_frame = self.create_frame("Login", self.bg_color)
         self.register_frame = self.create_frame("Register", self.bg_color)
         self.edit_frame = self.create_frame("Edit", self.bg_color)
         self.delete_frame = self.create_frame("Delete", self.bg_color)
 
+        # Adicionar frames ao Notebook
         self.notebook.add(self.login_frame, text="Login")
         self.notebook.add(self.register_frame, text="Registro")
         self.notebook.add(self.edit_frame, text="Editar")
         self.notebook.add(self.delete_frame, text="Deletar")
 
         self.notebook.pack(expand=True, fill="both")
-
+        
+        # Criar widgets para cada frame
         self.create_widgets_login()
         self.create_widgets_register()
         self.create_widgets_edit()
         self.create_widgets_delete()
-
+        
+        # Inicialmente, ocultar as guias de "Editar" e "Deletar"
         self.notebook.tab(2, state="hidden")
         self.notebook.tab(3, state="hidden")
 
         # Criar o arquivo users.csv se não existir
         self.create_users_file()
 
+
+    # Função para criar e retornar um frame com o título e cor de fundo fornecidos
     def create_frame(self, title, bg_color):
         frame = Frame(self.notebook, bg=bg_color)
         return frame
 
+
+    # Função para criar widgets relacionados ao frame de login
     def create_widgets_login(self):
         login_username_label = Label(
             self.login_frame, text="Nome de usuário:", bg=self.bg_color)
@@ -74,6 +82,8 @@ class UserManager:
         login_submit_button.pack(pady=10)
         login_label.pack()
 
+
+    # Função para criar widgets relacionados ao frame de registro
     def create_widgets_register(self):
         register_username_label = Label(
             self.register_frame, text="Nome de usuário:", bg=self.bg_color)
@@ -91,6 +101,8 @@ class UserManager:
         self.register_password_entry.pack(pady=5)
         register_submit_button.pack(pady=10)
 
+
+    # Função para criar widgets relacionados ao frame de edição
     def create_widgets_edit(self):
         self.edit_listbox = Listbox(self.edit_frame)
         edit_listbox_update_button = ttk.Button(
@@ -113,6 +125,8 @@ class UserManager:
         self.edit_password_entry.pack(pady=5)
         edit_submit_button.pack(pady=10)
 
+
+    # Função para criar widgets relacionados ao frame de exclusão
     def create_widgets_delete(self):
         self.delete_listbox = Listbox(self.delete_frame)
         delete_listbox_update_button = ttk.Button(
@@ -124,12 +138,15 @@ class UserManager:
         delete_listbox_update_button.pack(pady=5)
         delete_submit_button.pack(pady=10)
 
+
+    # Função para criar o arquivo users.csv se não existir
     def create_users_file(self):
         if not os.path.exists("users.csv"):
             with open("users.csv", "w", newline="") as file:
                 writer = csv.writer(file)
                 writer.writerow(["Username", "Password"])
-
+            
+    # Função para processar a operação de login
     def login(self):
         try:
             username = self.login_username_entry.get()
@@ -161,6 +178,8 @@ class UserManager:
         except Exception as e:
             messagebox.showerror("Erro", f"Erro ao fazer login: {str(e)}")
 
+
+    # Função para processar a operação de registro
     def register(self):
         try:
             username = self.register_username_entry.get()
@@ -198,6 +217,8 @@ class UserManager:
             messagebox.showerror(
                 "Erro", f"Erro ao registrar usuário: {str(e)}")
 
+
+    # Função para abrir uma nova instância de "Outra Tela"
     def open_other_screen(self):
         other_screen = Tk()
         other_screen_instance = OtherScreen(other_screen)
@@ -206,6 +227,8 @@ class UserManager:
         other_screen.protocol("WM_DELETE_WINDOW", lambda: self.on_close_other_screen(other_screen))
         other_screen.mainloop()
 
+
+    # Função para atualizar a caixa de listagem no frame de edição
     def update_edit_listbox(self):
         try:
             self.edit_listbox.delete(0, END)
@@ -217,6 +240,7 @@ class UserManager:
         except Exception as e:
             messagebox.showerror("Erro", f"Erro ao atualizar lista: {str(e)}")
 
+    # Função para atualizar a caixa de listagem no frame de exclusão
     def update_delete_listbox(self):
         try:
             self.delete_listbox.delete(0, END)
@@ -228,6 +252,7 @@ class UserManager:
         except Exception as e:
             messagebox.showerror("Erro", f"Erro ao atualizar lista: {str(e)}")
 
+    # Função para processar a operação de edição
     def edit(self):
         try:
             selected_user = self.edit_listbox.get(ACTIVE)
@@ -264,7 +289,8 @@ class UserManager:
             self.update_edit_listbox()
         except Exception as e:
             messagebox.showerror("Erro", f"Erro ao editar usuário: {str(e)}")
-
+    
+    # Função para processar a operação de exclusão
     def delete(self):
         try:
             selected_user = self.delete_listbox.get(ACTIVE)
@@ -288,6 +314,7 @@ class UserManager:
         except Exception as e:
             messagebox.showerror("Erro", f"Erro ao excluir usuário: {str(e)}")
 
+    # Função para exibir recursos específicos do administrador
     def show_admin_features(self):
         try:
             self.notebook.tab(2, state="normal")  # Mostrar a guia "Edit"
@@ -298,6 +325,7 @@ class UserManager:
             messagebox.showerror(
                 "Erro", f"Erro ao exibir funcionalidades do administrador: {str(e)}")
 
+    # Função para efetuar logout
     def logout(self):
         try:
             if self.root and self.root.winfo_exists():  # Verifica se a janela principal ainda existe
@@ -308,6 +336,7 @@ class UserManager:
         except Exception as e:
             messagebox.showerror("Erro ao fazer logout", str(e))
 
+    # Função para fechar a aplicação
     def exit_application(self):
         try:
             if self.root and self.root.winfo_exists():  # Verifica se a janela principal ainda existe
@@ -331,19 +360,22 @@ class UserManager:
             messagebox.showerror("Erro", f"Erro ao fechar aplicativo: {str(e)}")
 
 
-
+    # Função chamada ao fechar a instância de "Outra Tela"
     def on_close_other_screen(self, other_screen):
         self.other_screens.remove(other_screen)
         other_screen.destroy()
 
+    # Função para remover instâncias de "Outra Tela" que foram fechadas
     def remove_closed_screens(self):
         closed_screens = [screen for screen in self.other_screens if not screen.winfo_exists()]
         for closed_screen in closed_screens:
             self.other_screens.remove(closed_screen)
 
+    # Função para mostrar um determinado frame no Notebook
     def show_frame(self, frame):
         frame.tkraise()
 
+    # Função para verificar se uma senha é forte
     def is_strong_password(self, password):
         return (
             len(password) >= 8 and
@@ -353,11 +385,13 @@ class UserManager:
             re.search("[!@#$%^&*(),.?\":{}|<>]", password)
         )
 
+    # Função para gerar o hash de uma senha usando o algoritmo SHA-256
     def hash_password(self, password):
         sha256 = hashlib.sha256()
         sha256.update(password.encode("utf-8"))
         return sha256.hexdigest()
 
+    # Função para verificar se um usuário já existe no arquivo users.csv
     def user_exists(self, username):
         with open("users.csv", "r") as file:
             reader = csv.reader(file)
@@ -366,6 +400,7 @@ class UserManager:
                     return True
         return False
 
+    # Função para validar as credenciais de um usuário durante o login
     def validate_user_credentials(self, username, password):
         with open("users.csv", "r") as file:
             reader = csv.reader(file)
@@ -375,6 +410,7 @@ class UserManager:
         return False
 
 
+# Ponto de entrada do programa
 if __name__ == "__main__":
     admin_username = "admin"
     admin_password = "admin123"
