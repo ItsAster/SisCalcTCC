@@ -27,7 +27,6 @@ class UserManager:
         self.style.theme_use("clam")
         self.root.configure(bg=self.bg_color)
         self.other_screens = []
-
         self.notebook = ttk.Notebook(root)
 
         self.login_frame = self.create_frame("Login", self.bg_color)
@@ -203,8 +202,8 @@ class UserManager:
         other_screen = Tk()
         other_screen_instance = OtherScreen(other_screen)
         self.other_screens.append(other_screen)  # Adiciona instância à lista
-        # Adiciona tratamento de fechamento
-        other_screen.protocol("WM_DELETE_WINDOW", other_screen.destroy)
+        # Adiciona tratamento de fechamento com remoção da lista quando fechada
+        other_screen.protocol("WM_DELETE_WINDOW", lambda: self.on_close_other_screen(other_screen))
         other_screen.mainloop()
 
     def update_edit_listbox(self):
@@ -301,7 +300,7 @@ class UserManager:
 
     def logout(self):
         try:
-            if self.root.winfo_exists():  # Verifica se a janela principal ainda existe
+            if self.root and self.root.winfo_exists():  # Verifica se a janela principal ainda existe
                 self.notebook.tab(2, state="hidden")
                 self.notebook.tab(3, state="hidden")
                 self.show_frame(self.login_frame)
@@ -311,22 +310,36 @@ class UserManager:
 
     def exit_application(self):
         try:
-            if self.root.winfo_exists():  # Verifica se a janela principal ainda existe
+            if self.root and self.root.winfo_exists():  # Verifica se a janela principal ainda existe
+                # Remover instâncias de "Outra Tela" que foram fechadas
+                self.remove_closed_screens()
+
                 # Fechar todas as janelas abertas, incluindo "Outra Tela"
                 for window in self.root.winfo_children():
-                    if window.winfo_exists():  # Verifica se a janela ainda existe
+                    if window and window.winfo_exists():  # Verifica se a janela ainda existe
                         window.destroy()
 
-                # Fechar instâncias de "Outra Tela"
+                # Fechar instâncias de "Outra Tela" que podem ter sido abertas novamente
                 for other_screen in self.other_screens:
-                    if other_screen.winfo_exists():  # Verifica se a janela ainda existe
+                    if other_screen and other_screen.winfo_exists():  # Verifica se a janela ainda existe
                         other_screen.destroy()
 
                 resposta = messagebox.askyesno("Confirmação", "Você deseja sair?")
-                if resposta and self.root.winfo_exists():  # Verifica se a janela principal ainda existe
+                if resposta and self.root and self.root.winfo_exists():  # Verifica se a janela principal ainda existe
                     self.root.destroy()
         except Exception as e:
             messagebox.showerror("Erro", f"Erro ao fechar aplicativo: {str(e)}")
+
+
+
+    def on_close_other_screen(self, other_screen):
+        self.other_screens.remove(other_screen)
+        other_screen.destroy()
+
+    def remove_closed_screens(self):
+        closed_screens = [screen for screen in self.other_screens if not screen.winfo_exists()]
+        for closed_screen in closed_screens:
+            self.other_screens.remove(closed_screen)
 
     def show_frame(self, frame):
         frame.tkraise()
