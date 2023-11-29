@@ -5,6 +5,7 @@ import re
 from tkinter import *
 from tkinter import ttk, messagebox
 
+
 class OtherScreen:
     def __init__(self, master):
         self.master = master
@@ -13,6 +14,7 @@ class OtherScreen:
 
         label = Label(master, text="Esta é outra tela.")
         label.pack(pady=20)
+
 
 class UserManager:
 
@@ -25,8 +27,6 @@ class UserManager:
         self.style.theme_use("clam")
         self.root.configure(bg=self.bg_color)
         self.other_screens = []
-
-        
 
         self.notebook = ttk.Notebook(root)
 
@@ -58,11 +58,14 @@ class UserManager:
         return frame
 
     def create_widgets_login(self):
-        login_username_label = Label(self.login_frame, text="Nome de usuário:", bg=self.bg_color)
+        login_username_label = Label(
+            self.login_frame, text="Nome de usuário:", bg=self.bg_color)
         self.login_username_entry = Entry(self.login_frame)
-        login_password_label = Label(self.login_frame, text="Senha:", bg=self.bg_color)
+        login_password_label = Label(
+            self.login_frame, text="Senha:", bg=self.bg_color)
         self.login_password_entry = Entry(self.login_frame, show="*")
-        login_submit_button = ttk.Button(self.login_frame, text="Login", command=self.login)
+        login_submit_button = ttk.Button(
+            self.login_frame, text="Login", command=self.login)
         login_label = Label(self.login_frame, bg=self.bg_color)
 
         login_username_label.pack(pady=5)
@@ -193,15 +196,16 @@ class UserManager:
             self.register_username_entry.delete(0, END)
             self.register_password_entry.delete(0, END)
         except Exception as e:
-            messagebox.showerror("Erro", f"Erro ao registrar usuário: {str(e)}")
+            messagebox.showerror(
+                "Erro", f"Erro ao registrar usuário: {str(e)}")
 
     def open_other_screen(self):
         other_screen = Tk()
         other_screen_instance = OtherScreen(other_screen)
         self.other_screens.append(other_screen)  # Adiciona instância à lista
-        other_screen.protocol("WM_DELETE_WINDOW", other_screen.destroy)  # Adiciona tratamento de fechamento
+        # Adiciona tratamento de fechamento
+        other_screen.protocol("WM_DELETE_WINDOW", other_screen.destroy)
         other_screen.mainloop()
-
 
     def update_edit_listbox(self):
         try:
@@ -297,29 +301,32 @@ class UserManager:
 
     def logout(self):
         try:
-            self.notebook.tab(2, state="hidden")  # Ocultar a guia "Edit"
-            self.notebook.tab(3, state="hidden")  # Ocultar a guia "Delete"
-            self.show_frame(self.login_frame)
-            messagebox.showinfo("Sucesso", "Deslogado com sucesso!")
+            if self.root.winfo_exists():  # Verifica se a janela principal ainda existe
+                self.notebook.tab(2, state="hidden")
+                self.notebook.tab(3, state="hidden")
+                self.show_frame(self.login_frame)
+                messagebox.showinfo("Sucesso", "Deslogado com sucesso!")
         except Exception as e:
             messagebox.showerror("Erro ao fazer logout", str(e))
 
     def exit_application(self):
         try:
-            # Fechar todas as janelas abertas, incluindo "Outra Tela"
-            for window in self.root.winfo_children():
-                window.destroy()
+            if self.root.winfo_exists():  # Verifica se a janela principal ainda existe
+                # Fechar todas as janelas abertas, incluindo "Outra Tela"
+                for window in self.root.winfo_children():
+                    if window.winfo_exists():  # Verifica se a janela ainda existe
+                        window.destroy()
 
-            # Fechar instâncias de "Outra Tela"
-            for other_screen in self.other_screens:
-                other_screen.destroy()
+                # Fechar instâncias de "Outra Tela"
+                for other_screen in self.other_screens:
+                    if other_screen.winfo_exists():  # Verifica se a janela ainda existe
+                        other_screen.destroy()
 
-            resposta = messagebox.askyesno("Confirmação", "Você deseja sair?")
-            if resposta:
-                self.root.destroy()
+                resposta = messagebox.askyesno("Confirmação", "Você deseja sair?")
+                if resposta and self.root.winfo_exists():  # Verifica se a janela principal ainda existe
+                    self.root.destroy()
         except Exception as e:
             messagebox.showerror("Erro", f"Erro ao fechar aplicativo: {str(e)}")
-
 
     def show_frame(self, frame):
         frame.tkraise()
@@ -354,6 +361,7 @@ class UserManager:
                     return True
         return False
 
+
 if __name__ == "__main__":
     admin_username = "admin"
     admin_password = "admin123"
@@ -362,14 +370,15 @@ if __name__ == "__main__":
     userManager = UserManager(root)
 
     # Adicione botões de "Sair" e "Deslogar"
-    logout_button = ttk.Button(root, text="Deslogar", command=userManager.logout)
+    logout_button = ttk.Button(
+        root, text="Deslogar", command=userManager.logout)
     logout_button.pack(side=LEFT, pady=5)
 
-    exit_button = ttk.Button(root, text="Sair", command=userManager.exit_application)
+    exit_button = ttk.Button(
+        root, text="Sair", command=userManager.exit_application)
     exit_button.pack(side=RIGHT, pady=5)
 
     # Configurar tratamento de erro para fechar aplicativo
     root.protocol("WM_DELETE_WINDOW", userManager.exit_application)
 
     root.mainloop()
-           
