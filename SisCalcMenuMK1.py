@@ -14,9 +14,10 @@ from datetime import datetime
 
 
 # Função que representa uma segunda tela
-def funcao_segundo_script():
+def funcao_segundo_script(teste_fechar_janela, janela_principal=None):
 
-
+    
+        
 
     # Dicionário de namespaces
     namespaces = {'nfe': 'http://www.portalfiscal.inf.br/nfe'}
@@ -34,73 +35,77 @@ def funcao_segundo_script():
         for det in infNFe.findall(".//nfe:det", namespaces):
             compra = {
                 "Tipo": "Compra",
-                "Data da Emissão da Nota Fiscal": "",
-                "Chave de Acesso": "",
-                "Informações para o Cálculo": "",
-                "CNPJ Emitente": "",
-                "Nome Emitente": "",
-                "UF Emitente": "",
-                "Destinatário": "",
-                "Nº do Item na NFe da Venda": "",
-                "Descrição do Produto": "",
+                "Data da Emissao da Compra": "",
+                "Chave de Acesso da Compra": "",
+                "CNPJ emitente": "",
+                "Nome Empresarial emitente": "",
+                "UF emitente": "",
+                "CNPJ destinatário": "",
+                "Nome Destinatário": "",
+                "Descricao do Produto Comprado": "",
                 "Código do Produto": "",
                 "NCM": "",
-                "EAN": "",
-                "Unidade Comercializada": "",
-                "Quantidade Comercializada": "",
-                "Valor Unitário da Venda": "",
-                "Produto ST": "",
-                "Alíquota Interna": "",
-                "Valor Unitário da Venda Presumida": ""
+                "EAN da Compra": "",
+                "Quantidade em Embalagens": "",
+                "Quantidade em Unidades": "",
+                "BCST Unitaria": "",
+                "Alíquota Interna": "-",
+                "Valor Unitário da Venda Presumida": "-",
+                "Nº do Item na NFe da Compra": "",
+                
             }
 
             dhEmi_element = infNFe.find(".//nfe:dhEmi", namespaces)
             chNFe_element = infNFe.find(".//nfe:chNFe", namespaces)
+            cNF_element = infNFe.find(".//nfe:cNF", namespaces)
 
             # Adicionar verificações antes de acessar os atributos
             if dhEmi_element is not None:
-                compra["Data da Emissão da Nota Fiscal"] = dhEmi_element.text
+                compra["Data da Emissao da Compra"] = dhEmi_element.text
 
             if chNFe_element is not None:
-                compra["Chave de Acesso"] = chNFe_element.text
+                compra["Chave de Acesso da Compra"] = chNFe_element.text
 
-            compra["Informações para o Cálculo"] = infNFe.find(
-                ".//nfe:natOp", namespaces).text
+            if cNF_element is not None:
+                compra["Codigo NFe"] = cNF_element.text
 
             emitente = infNFe.find(".//nfe:emit", namespaces)
-            compra["CNPJ Emitente"] = emitente.find(".//nfe:CNPJ", namespaces).text
-            compra["Nome Emitente"] = emitente.find(
+            compra["CNPJ emitente"] = emitente.find(".//nfe:CNPJ", namespaces).text
+            compra["Nome Empresarial emitente"] = emitente.find(
                 ".//nfe:xNome", namespaces).text
-            compra["UF Emitente"] = emitente.find(".//nfe:UF", namespaces).text
+            compra["UF emitente"] = emitente.find(".//nfe:UF", namespaces).text
 
             destinatario = infNFe.find(".//nfe:dest", namespaces)
-            destinatario_id = destinatario.find(".//nfe:CPF | .//nfe:CNPJ", namespaces)
-            if destinatario_id is not None:
-                compra["Destinatário"] = destinatario_id.text
+            if destinatario is not None:
+                cpf_destinatario = destinatario.find(".//nfe:CPF", namespaces)
+                if cpf_destinatario is not None:
+                    compra["CNPJ destinatário"] = cpf_destinatario.text
 
-            compra["Nº do Item na NFe da Venda"] = det.get("nItem")
+                nome_destinatario = destinatario.find(".//nfe:xNome", namespaces)
+                if nome_destinatario is not None:
+                    compra["Nome Destinatário"] = nome_destinatario.text
+            else:
+                compra["CNPJ destinatário"] = "CPF não encontrado no destinatário"
+                compra["Nome Destinatário"] = "Nome não encontrado no destinatário"
+
+            compra["Nº do Item na NFe da Compra"] = det.get("nItem")
             produto = det.find(".//nfe:prod", namespaces)
-            compra["Descrição do Produto"] = produto.find(
+            compra["Descricao do Produto Comprado"] = produto.find(
                 ".//nfe:xProd", namespaces).text
             compra["Código do Produto"] = produto.find(
                 ".//nfe:cProd", namespaces).text
             compra["NCM"] = produto.find(
                 ".//nfe:NCM", namespaces).text
-            compra["EAN"] = produto.find(
+            compra["EAN da Compra"] = produto.find(
                 ".//nfe:cEAN", namespaces).text
-            compra["Unidade Comercializada"] = produto.find(
+            compra["Quantidade em Embalagens"] = produto.find(
                 ".//nfe:uCom", namespaces).text
-            compra["Quantidade Comercializada"] = produto.find(
+            compra["Quantidade em Unidades"] = produto.find(
                 ".//nfe:qCom", namespaces).text
-            compra["Valor Unitário da Venda"] = produto.find(
+            compra["BCST Unitaria"] = produto.find(
                 ".//nfe:vUnCom", namespaces).text
 
-            produto_st = det.find(
-                ".//nfe:imposto/nfe:ICMS/nfe:ICMSSN102", namespaces)
-            if produto_st is not None and produto_st.find(".//nfe:CSOSN", namespaces).text == "103":
-                compra["Produto ST"] = "Sim"
-            else:
-                compra["Produto ST"] = "Não"
+          
 
             dados_compras.append(compra)
 
@@ -109,65 +114,75 @@ def funcao_segundo_script():
         for det in infNFe.findall(".//nfe:det", namespaces):
             venda = {
                 "Tipo": "Venda",
-                "Data da Emissão da Nota Fiscal": "",
-                "Chave de Acesso": "",
-                "Informações para o Cálculo": "",
-                "CNPJ Emitente": "",
-                "Nome Emitente": "",
-                "UF Emitente": "",
-                "Destinatário": "",
+                "Data da Emissao da Compra": "",
+                "Chave de Acesso da Compra": "",
+                "CNPJ emitente": "",
+                "Nome Empresarial emitente": "",
+                "UF emitente": "",
+                "CNPJ destinatário": "",
+                "Nome Destinatário": "",
                 "Nº do Item na NFe da Venda": "",
-                "Descrição do Produto": "",
+                "Descricao do Produto Vendido": "",
                 "Código do Produto": "",
                 "NCM": "",
-                "EAN": "",
-                "Unidade Comercializada": "",
-                "Quantidade Comercializada": "",
-                "Valor Unitário da Venda": "",
+                "EAN da Venda": "",
+                "Quantidade em Embalagens": "",
+                "Quantidade em Unidades": "",
+                "BCST Unitaria": "",
                 "Produto ST": "",
-                "Alíquota Interna": "",
-                "Valor Unitário da Venda Presumida": ""
+                "Alíquota Interna": "-",
+                "Valor Unitário da Venda Presumida": "-",                               
             }
 
             dhEmi_element = infNFe.find(".//nfe:dhEmi", namespaces)
             chNFe_element = infNFe.find(".//nfe:chNFe", namespaces)
+            cNF_element = infNFe.find(".//nfe:cNF", namespaces)
 
             # Adicionar verificações antes de acessar os atributos
             if dhEmi_element is not None:
-                venda["Data da Emissão da Nota Fiscal"] = dhEmi_element.text
+                venda["Data da Emissao da Compra"] = dhEmi_element.text
 
             if chNFe_element is not None:
-                venda["Chave de Acesso"] = chNFe_element.text
+                venda["Chave de Acesso da Compra"] = chNFe_element.text
 
-            venda["Informações para o Cálculo"] = infNFe.find(
-                ".//nfe:natOp", namespaces).text
+            if cNF_element is not None:
+                venda["Codigo NFe"] = cNF_element.text
 
+            
             emitente = infNFe.find(".//nfe:emit", namespaces)
-            venda["CNPJ Emitente"] = emitente.find(".//nfe:CNPJ", namespaces).text
-            venda["Nome Emitente"] = emitente.find(
+            venda["CNPJ emitente"] = emitente.find(".//nfe:CNPJ", namespaces).text
+            venda["Nome Empresarial emitente"] = emitente.find(
                 ".//nfe:xNome", namespaces).text
-            venda["UF Emitente"] = emitente.find(".//nfe:UF", namespaces).text
+            venda["UF emitente"] = emitente.find(".//nfe:UF", namespaces).text
 
             destinatario = infNFe.find(".//nfe:dest", namespaces)
-            destinatario_id = destinatario.find(".//nfe:CPF | .//nfe:CNPJ", namespaces)
-            if destinatario_id is not None:
-                venda["Destinatário"] = destinatario_id.text
+            if destinatario is not None:
+                cpf_destinatario = destinatario.find(".//nfe:CPF", namespaces)
+                if cpf_destinatario is not None:
+                    venda["CNPJ destinatário"] = cpf_destinatario.text
+
+                nome_destinatario = destinatario.find(".//nfe:xNome", namespaces)
+                if nome_destinatario is not None:
+                    venda["Nome Destinatário"] = nome_destinatario.text
+            else:
+                venda["CNPJ destinatário"] = "CPF não encontrado no destinatário"
+                venda["Nome Destinatário"] = "Nome não encontrado no destinatário"
 
             venda["Nº do Item na NFe da Venda"] = det.get("nItem")
             produto = det.find(".//nfe:prod", namespaces)
-            venda["Descrição do Produto"] = produto.find(
+            venda["Descricao do Produto Vendido"] = produto.find(
                 ".//nfe:xProd", namespaces).text
             venda["Código do Produto"] = produto.find(
                 ".//nfe:cProd", namespaces).text
             venda["NCM"] = produto.find(
                 ".//nfe:NCM", namespaces).text
-            venda["EAN"] = produto.find(
+            venda["EAN da Venda"] = produto.find(
                 ".//nfe:cEAN", namespaces).text
-            venda["Unidade Comercializada"] = produto.find(
+            venda["Quantidade em Embalagens"] = produto.find(
                 ".//nfe:uCom", namespaces).text
-            venda["Quantidade Comercializada"] = produto.find(
+            venda["Quantidade em Unidades"] = produto.find(
                 ".//nfe:qCom", namespaces).text
-            venda["Valor Unitário da Venda"] = produto.find(
+            venda["BCST Unitaria"] = produto.find(
                 ".//nfe:vUnCom", namespaces).text
 
             produto_st = det.find(
@@ -320,109 +335,226 @@ def funcao_segundo_script():
 
     def calculo_ICMS(barra_progresso):
         try:
-            # Carregando os dados das planilhas
-            compras_df = pd.read_csv('Planilha_FINAL_COMPRA.csv', sep=';', decimal=',', thousands='.', encoding='latin1')
-            vendas_df = pd.read_csv('Planilha_FINAL_VENDA.csv', sep=';', decimal=',', thousands='.', encoding='latin1')
+            # Carregando as planilhas e coletando os dados
+            compras_df = pd.read_csv('Planilha_FINAL_COMPRA.csv', sep=';', decimal='.', encoding='latin1')
+            vendas_df = pd.read_csv('Planilha_FINAL_VENDA.csv', sep=';', decimal='.', encoding='latin1')
 
-            # Removendo "R$" do campo "BCST Unitaria" e substituindo ',' por '.'
+            # # Testando ainda
+            # bcst_unitaria_original = compras_df['BCST Unitaria'].copy()
+
+            # Removendo "R$" da coluna "BCST Unitaria" da planilha Compras e substituindo ',' por '.'
             compras_df['BCST Unitaria'] = pd.to_numeric(compras_df['BCST Unitaria'].replace('[^\d.,]', '', regex=True).str.replace(',', '.'), errors='coerce')
+            
+            # # Removendo "R$" da coluna "Valor Unitario da Venda" da planilha Vendas e substituindo ',' por '.'
             vendas_df['Valor Unitario da Venda'] = pd.to_numeric(vendas_df['Valor Unitario da Venda'].replace('[^\d.,]', '', regex=True).str.replace(',', '.'), errors='coerce')
-
-            # Inicializando a variável de ramificação
-            ramificacao = 0
 
             
             # Criar um DataFrame para armazenar os resultados
+
+            linha_A1_excel = [
+                'A1','A2','A3','A4','A5','A6','A7'
+            ]
+            ## Cria um DataFrame 
+            resultado_df_linha_A1_excel = pd.DataFrame([linha_A1_excel])
+            resultado_df_linha_A1_excel.to_excel('RelatorioGerencial_201906.xlsx', index=False, header=False)
+
+            linha_A2_excel = [
+                'A', 'CNPJ do Requerente', 'Período de Referência AAAAMM','Data da Geração do Arquivo AAAAMMDD','Sequencial do Arquivo','Quantidade de Arquivos', 'Nome do Responsável'
+            ]
+
+            ## Cria um DataFrame 
+            resultado_df_linha_A2_excel = pd.DataFrame([linha_A2_excel])
+
+            # Lê o arquivo Excel existente
+            resultado_df_excel = pd.read_excel('RelatorioGerencial_201906.xlsx', header=None)
+
+            # Adiciona a nova linha ao DataFrame existente
+            resultado_df_excel = pd.concat([resultado_df_excel, resultado_df_linha_A2_excel], ignore_index=True)
+
+            resultado_df_excel.to_excel('RelatorioGerencial_201906.xlsx', index=False, header=False)
+
+            ## Coleta a data durante a criação do .csv
             data_atual = datetime.now()
             data_formatada = data_atual.strftime("%Y%m%d")
+
+            valor_cnpj_destinatario = compras_df.loc[0, 'CNPJ destinatario']
+
+            ## Cria a primeira linha do csv resultado
             line1 =  [
-                'A', 'CNPJ RE', '201906', data_formatada,
-                1, 1
+                'A', valor_cnpj_destinatario, '201906', data_formatada,
+                1, 1, 'Varejao UDF'
              ]
 
+            ## Cria um DataFrame 
             resultado_df_line1 = pd.DataFrame([line1])
 
+            # Lê o arquivo Excel existente
+            resultado_df_excel = pd.read_excel('RelatorioGerencial_201906.xlsx', header=None)
+
+            # Adiciona a nova linha ao DataFrame existente
+            resultado_df_excel = pd.concat([resultado_df_excel, resultado_df_line1], ignore_index=True)
+
+            ## Envia o DataFrame acima para o arquivo 'resultado.csv'
             resultado_df_line1.to_csv('resultado.csv', index=False, header=False, sep=';', decimal=',', encoding='utf-8', mode='w')
-            
+            resultado_df_excel.to_excel('RelatorioGerencial_201906.xlsx', index=False, header=False)
+
+            linha_D1_excel = [
+                'D1','D2','D3','D4','D5','D6','D7','D8','D9','D10','D11','D12','D13','D14','D15'
+            ]
+
+            ## Cria um DataFrame 
+            resultado_df_linha_D1_excel = pd.DataFrame([linha_D1_excel])
+
+            # Lê o arquivo Excel existente
+            resultado_df_excel = pd.read_excel('RelatorioGerencial_201906.xlsx', header=None)
+
+            # Adiciona a nova linha ao DataFrame existente
+            resultado_df_excel = pd.concat([resultado_df_excel, resultado_df_linha_D1_excel], ignore_index=True)
+
+            resultado_df_excel.to_excel('RelatorioGerencial_201906.xlsx', index=False, header=False)
 
 
-            # Variável para sequenciar as linhas
+            linha_D2_excel = [
+                'Letra D','Sequencial da linha','Chave de Acesso da NF Venda','Nº do Item na NF da Venda','Fator de Conversão','Código do Produto na Nfe de Venda','Valor Unitário de Venda',
+                'Quantidade Vendida','Chave de Acesso da Compra','Nº do Item na NFe da Compra','Código Interno do Produto na Nfe Compra','BC ST Unitária','Diferença Valores','Valor do ICMS A Restituir ou Complementar','Período de Escrituração da Nfe de Compra AAAAMM'
+            ]
+            ## Cria um DataFrame 
+            resultado_df_linha_D2_excel = pd.DataFrame([linha_D2_excel])
+
+            # Lê o arquivo Excel existente
+            resultado_df_excel = pd.read_excel('RelatorioGerencial_201906.xlsx', header=None)
+
+            # Adiciona a nova linha ao DataFrame existente
+            resultado_df_excel = pd.concat([resultado_df_excel, resultado_df_linha_D2_excel], ignore_index=True)
+
+            resultado_df_excel.to_excel('RelatorioGerencial_201906.xlsx', index=False, header=False)
+
+            ## Variável para sequenciar as linhas do csv resultado
             sequencial_linha = 1
-            x = 0
 
-            # Iterando sobre as linhas da tabela de vendas
+            # Variáveis para armazenar valores finais e realizar calculos no código
+            valor_final = 0
+            diferenca_valores = 0
+            guardar_calculo_icmsst = 0
+            consumidoresNaoFinais = 0
+            produtosNaoST = 0
+
+            # 1º Passo: Iterar sobre as linhas da tabela de vendas
             for _, venda_row in vendas_df.iterrows():
+                # Variável de calculo de ICMS-ST
                 calculo_icmsst = 0
+                # Variável utilizada para guardar quantas vezes o produto de venda foi calculado
                 contador = 0
+                # Variável usada para guardar o nome do produto da planilha de vendas atual para realizar o cálulo
                 nome_do_produto = venda_row['Descricao do Produto Vendido']
+
+                # Utilizado para questão de conhecimento de qual produto vai ser calculado *****
                 print(nome_do_produto)
 
-                # 2º - Verificar se o valor da coluna 'Sequencial EAN' do produto selecionado da 1ª regra da tabela Vendas_Testes_CSV.csv é encontrado na coluna 'Sequencial EAN' da planilha Compras_Testes_Valores_3_CSV.csv são iguais
+                # 2º Passo: Verificar se o valor da coluna 'Sequencial EAN' do produto selecionado é encontrado na coluna 'Sequencial EAN' da planilha de compras
+                ## Variável utilizada para guardar valor de 'Sequencial EAN' do produto selecionado
                 sequencial_ean_venda = venda_row['Sequencial EAN']
-                compras_selecionadas = compras_df[compras_df['Sequencial EAN'] == sequencial_ean_venda]
-                lista_compras_selecionadas = [compras_selecionadas]
 
-                # Verificando se a compra foi encontrada
+                ## Variável que armazena quais produtos da planilha compras possuem o mesmo sequencial EAN do produto de venda
+                compras_selecionadas = compras_df[compras_df['Sequencial EAN'] == sequencial_ean_venda]
+
+                # IF utilizado para ver se exite um produto com o mesmo sequencial EAN na planilha de compras                
                 if compras_selecionadas.empty:
+                    ##Se caso a variável (compras_selecionadas) estiver vazia o programa resulta nessa mensagem
                     print(f"Produto {nome_do_produto} com Sequencial EAN {sequencial_ean_venda} não encontrado no estoque")
                     continue
 
-                # 3º - Se a 3ª regra passar, verificar se o valor da coluna 'Informacoes para o Calculo do Estoque da Venda' do produto selecionado da 1ª regra da planilha Vendas_Testes_CSV.csv for igual a 'consumidor final'
+                # 3º Passo - Verificar se o valor da coluna 'Informacoes para o Calculo do Estoque da Venda' do produto selecionado é igual a 'consumidor final'
                 if venda_row['Informacoes para o Calculo do Estoque da Venda'] != 'consumidor final':
+                    ##Se caso possuir algum produto de vendas com o valor diferente de consumidor final ele vai me devolver essa mensagem
                     print(f"Produto {nome_do_produto} não foi vendido para consumidor final")
+                    consumidoresNaoFinais = consumidoresNaoFinais + 1
+                    quantidade_venda = venda_row['Quantidade Vendida']
+                    for index_compras, compra_row in compras_selecionadas.iterrows():
+                        quantidade_compra = int(compra_row['Quantidade em Unidades'])
+                        while quantidade_venda > 0 and quantidade_compra > 0:
+                            if quantidade_compra < quantidade_venda:
+                                vendaCalculo = quantidade_compra
+                            else:
+                                vendaCalculo = quantidade_venda
+                                
+                            diferenca_valores = round(venda_row['Valor Unitario da Venda'] - compra_row['BCST Unitaria'], 2)
+                            
+                            novaQuantidadeProdutoCompra = quantidade_compra - quantidade_venda
+
+                            if novaQuantidadeProdutoCompra < 0:
+                                novaQuantidadeProdutoCompra = 0
+                            else:
+                                index_compras = index_compras
+                            compras_df.loc[index_compras, 'Quantidade em Unidades'] = novaQuantidadeProdutoCompra
+                            compras_df.to_csv('Planilha_FINAL_COMPRA.csv', index=False)
+                            quantidade_venda = quantidade_venda - quantidade_compra
+                            if quantidade_venda < 0:
+                                quantidade_venda = 0
+                            aliquota = 0
+                            #print(f"{diferenca_valores} * {vendaCalculo} * {aliquota}")
+                            calculo_icmsst = round((diferenca_valores * vendaCalculo * 0), 2)
+                            #print(calculo_icmsst)
+
+                            if novaQuantidadeProdutoCompra == 0:
+                                break
                     continue
 
-                # 4º - Se a 4ª regra passar, verificar se o valor da coluna 'Produto ST?' do produto selecionado da 1ª regra da planilha Vendas_Testes_CSV.csv for igual a 'Sim'
+                # 4º Passo - Verificar se o valor da coluna 'Produto ST?' do produto selecionado é for igual a 'Sim'
                 if venda_row['Produto ST?'] != 'sim':
+                    ##Se caso o produto for produto ST de vendas com o valor diferente de Sim ele vai me devolver essa mensagem
                     print(f"Produto {nome_do_produto} não é Produto ST")
+                    produtosNaoST = produtosNaoST + 1
                     continue
 
-                # 5º - Verificar se o valor da coluna 'Data Emissao da Venda' do produto selecionado da 1ª regra é maior que o valor da coluna 'Data Emissao da Compra' dos produtos selecionados com EAN igual na 2ª regra
+                # 5º Passo - Verificar se o valor da coluna 'Data Emissao da Venda' do produto selecionado é maior que o valor da coluna 'Data Emissao da Compra' dos produtos selecionados com EAN igual na 2ª regra
+                ##Variável que reorganiza as datas no modelo correto
                 data_emissao_venda = pd.to_datetime(venda_row['Data da Emissao da Venda'], format='mixed', dayfirst=True)
+                ##Variável que armazena as compras com valor menor que a data de venda
                 compras_selecionadas = compras_selecionadas[pd.to_datetime(compras_selecionadas['Data da Emissao da Compra'], format='mixed', dayfirst=True) < data_emissao_venda]
-                print('Passou AQUI')
-                # 6º - Calcular a diferença de valores
+            
+                # 6º - Calcular a diferença de valores e realizar o cálculo do ICMS-ST
+                ## Armazena o valor da quantidade de produtos vendidos do produto selecionado
                 quantidade_venda = venda_row['Quantidade Vendida']
-                for index_compras, compra_row in compras_selecionadas.iterrows():
-                    if quantidade_venda <= 0:
-                        index_compras = index_compras - 1
-                        print("For 2 Break")
-                        print(index_compras)
-                        break
-                    icmsst_total = 0
-                    print(f"index_compras = {index_compras}")
-                    print(compra_row)
-                    quantidade_compra = compra_row['Quantidade em Unidades']
-                    print(f"Quantidade de produto COMPRA = {quantidade_compra} - Antes do While")
-                    print(f"Quantidade de produto VENDA = {quantidade_venda} - Antes do While")
 
-                    # aqui valida a entrada da quantida de venda
+                ## Iteração sobre as linhas da tabela de compra
+                for index_compras, compra_row in compras_selecionadas.iterrows():
+
+                    ### Verifica se a quantidade de venda for menor ou igual a zero ele para o for
+                    if quantidade_venda <= 0:
+                        #### Variável que retorna o index que foi passo depois de uma quantidade zerada do produto de vendas
+                        index_compras = index_compras - 1
+                        break
+                    ### Armazena o valor da quantidade de produtos comprados da linha selecionadoa
+                    quantidade_compra = int(compra_row['Quantidade em Unidades'])
+                    
+                    ###  /////////                
                     while quantidade_venda > 0 and quantidade_compra > 0:
-                        compra_especifica_ramificacao = compras_df.loc[compras_df['Ramificacao'] == ramificacao]
-                        print(compra_especifica_ramificacao)
 
                         if quantidade_compra < quantidade_venda:
                             vendaCalculo = quantidade_compra
                         else:
                             vendaCalculo = quantidade_venda
-                        diferenca_valores = round(compra_row['BCST Unitaria'] - venda_row['Valor Unitario da Venda'], 2)
-                        # quantidade = min(quantidade_compra, quantidade_venda)
+                        diferenca_valores = round(venda_row['Valor Unitario da Venda'] - compra_row['BCST Unitaria'], 2)
+                        
                         novaQuantidadeProdutoCompra = quantidade_compra - quantidade_venda
 
                         if novaQuantidadeProdutoCompra < 0:
                             novaQuantidadeProdutoCompra = 0
                         else:
                             index_compras = index_compras
-                        # quantidade_compra -= quantidade
+
                         compras_df.loc[index_compras, 'Quantidade em Unidades'] = novaQuantidadeProdutoCompra
-                        compras_df.to_csv('Compras_Teste_Calculo_21-11.csv', index=False)
+                        compras_df.to_csv('Planilha_FINAL_COMPRA.csv', index=False,  sep=';')
+
                         quantidade_venda = quantidade_venda - quantidade_compra
+
                         if quantidade_venda < 0:
                             quantidade_venda = 0
                         aliquota = venda_row['Aliquota Interna']
-                        print(f"{diferenca_valores} * {vendaCalculo} * {aliquota}")
+                        #print(f"{diferenca_valores} * {vendaCalculo} * {aliquota}")
                         calculo_icmsst = round((diferenca_valores * vendaCalculo * (venda_row['Aliquota Interna']) / 100), 2)
-                        print(calculo_icmsst)
+                        #print(calculo_icmsst)
 
                         if contador == 0:
                             guardar_calculo_icmsst = calculo_icmsst
@@ -430,37 +562,17 @@ def funcao_segundo_script():
                         else:
                             guardar_calculo_icmsst = guardar_calculo_icmsst + calculo_icmsst
 
-                        if novaQuantidadeProdutoCompra == 0 and ramificacao >= 0:
-                            ramificacao = ramificacao + 1
-                            print("While Break")
+                        if novaQuantidadeProdutoCompra == 0:
                             break
-                        print('///// Teste While ///////')
-
-                    progresso_atual = int((index_compras / len(compras_selecionadas)) * 100)
-                    barra_progresso["value"] = progresso_atual
-                    barra_progresso.update_idletasks()
-                    barra_progresso.step(10)  # Ajuste conforme necessário
-                    barra_progresso.update()
-
-                if diferenca_valores > 0:
-                    print(f"O produto {nome_do_produto} com valor {guardar_calculo_icmsst} pode ser ressarcido na receita")
-                else:
-                    calculo_icmsst = calculo_icmsst * -1
-                    print(f"O produto {nome_do_produto} com valor {guardar_calculo_icmsst} deve ser pago para a receita")
-
-                print('///// Teste For - 2 ///////')
-
-                print('///// Teste For - 1 ///////')
-                if diferenca_valores < 0:
-                    diferenca_valores = diferenca_valores * -1
-
-
-                dados_calculo = [ 
+                    
+                    
+                    dados_calculo = [ 
                         'D',
                         sequencial_linha,
                         venda_row['Chave de Acesso da NF Venda'],
                         venda_row['Nr do Item na NFe da Venda'],
                         1,
+                        venda_row['NCM'],
                         venda_row['Valor Unitario da Venda'],
                         venda_row['Quantidade Vendida'],
                         compra_row['Chave de Acesso da Compra'],
@@ -472,46 +584,105 @@ def funcao_segundo_script():
                         '201906'
                     ]
 
-                nova_linha = pd.DataFrame([dados_calculo])
-                #resultado_df = pd.concat([resultado_df, nova_linha], ignore_index=True, sort=False)
+                    nova_linha = pd.DataFrame([dados_calculo])
 
-                # Incrementa o sequencial da linha
-                sequencial_linha += 1
+                    # Lê o arquivo Excel existente
+                    resultado_df_excel = pd.read_excel('RelatorioGerencial_201906.xlsx', header=None)
 
-                # Salva o DataFrame resultado_df em um arquivo CSV
-                nova_linha.to_csv('resultado.csv', index=False, header=False, sep=';', decimal=',', encoding='utf-8', mode='a')
+                    # Adiciona a nova linha ao DataFrame existente
+                    resultado_df_excel = pd.concat([resultado_df_excel, nova_linha], ignore_index=True)
+                    
 
-                x = round(guardar_calculo_icmsst + x, 2)
+                    # Incrementa o sequencial da linha
+                    sequencial_linha += 1
+
+                    # Salva o DataFrame resultado_df em um arquivo CSV
+                    nova_linha.to_csv('resultado.csv', index=False, header=False, sep=';', decimal=',', encoding='utf-8', mode='a')
+                    resultado_df_excel.to_excel('RelatorioGerencial_201906.xlsx', index=False, header=False)
+                    valor_final = round(guardar_calculo_icmsst + valor_final, 2)
+
+
+                    progresso_atual = int((index_compras / len(compras_selecionadas)) * 100)
+                    barra_progresso["value"] = progresso_atual
+                    barra_progresso.update_idletasks()
+                    barra_progresso.step(10)
+                    barra_progresso.update()
+                
+                if diferenca_valores >= 0:
+                    print(f"O produto {nome_do_produto} com valor {guardar_calculo_icmsst} pode ser complementado na receita")
+                else:
+                    #calculo_icmsst = calculo_icmsst * -1
+                    print(f"O produto {nome_do_produto} com valor {guardar_calculo_icmsst} deve ser restituido para a receita")
+
+                # if diferenca_valores < 0:
+                #     diferenca_valores = diferenca_valores * -1
+
+
+            linha_E1_excel = [
+                'E1','E2','E3'
+            ]
+
+            ## Cria um DataFrame 
+            resultado_df_linha_E1_excel = pd.DataFrame([linha_E1_excel])
+
+            # Lê o arquivo Excel existente
+            resultado_df_excel = pd.read_excel('RelatorioGerencial_201906.xlsx', header=None)
+
+            # Adiciona a nova linha ao DataFrame existente
+            resultado_df_excel = pd.concat([resultado_df_excel, resultado_df_linha_E1_excel], ignore_index=True)
+
+            resultado_df_excel.to_excel('RelatorioGerencial_201906.xlsx', index=False, header=False)
+
+
+            linha_E2_excel = [
+                'E','Total de Registros do Tipo 2','Total do ICMS Requerido '
+            ]
+            ## Cria um DataFrame 
+            resultado_df_linha_E2_excel = pd.DataFrame([linha_E2_excel])
+
+            # Lê o arquivo Excel existente
+            resultado_df_excel = pd.read_excel('RelatorioGerencial_201906.xlsx', header=None)
+
+            # Adiciona a nova linha ao DataFrame existente
+            resultado_df_excel = pd.concat([resultado_df_excel, resultado_df_linha_E2_excel], ignore_index=True)
+
+            resultado_df_excel.to_excel('RelatorioGerencial_201906.xlsx', index=False, header=False)
 
 
             line3 =  [
-                'E', (sequencial_linha - 1), x
+                'E', (sequencial_linha - 1), valor_final
             ]
 
             resultado_df_line3 = pd.DataFrame([line3])
 
-            resultado_df_line3.to_csv('resultado.csv', index=False, header=False, sep=';', decimal=',', encoding='utf-8', mode='a')
+            # Lê o arquivo Excel existente
+            resultado_df_excel = pd.read_excel('RelatorioGerencial_201906.xlsx', header=None)
 
+            # Adiciona a nova linha ao DataFrame existente
+            resultado_df_excel = pd.concat([resultado_df_excel, resultado_df_line3], ignore_index=True)
+
+            resultado_df_line3.to_csv('resultado.csv', index=False, header=False, sep=';', decimal=',', encoding='utf-8', mode='a')
+            resultado_df_excel.to_excel('RelatorioGerencial_201906.xlsx', index=False, header=False)
 
             # Se tudo ocorreu bem
             barra_progresso["value"] = 100
             
 
-            messagebox.showinfo("Sucesso", "O cálculo foi realizado com sucesso e o arquivo resultado.csv foi criado.")
+            messagebox.showinfo("Sucesso", "O cálculo foi realizado com sucesso, os arquivos resultado.csv e o relatório gerencial foram criados com sucesso.")
             time.sleep(0.5)
             
-            if x > 0:
-                messagebox.showinfo("Valor", f"Valor a receber {x}")
-                texto_resultado_final = f"Valor a receber: {x}\n"
+            if valor_final >= 0:
+                #messagebox.showinfo("Valor", f"Valor a receber {valor_final}")
+                texto_resultado_final = f"Valor a complementar: {valor_final}\n"
                 time.sleep(0.5)
             else:
-                x = x * -1
-                messagebox.showinfo("Valor", f"Valor a pagar {x}")
-                texto_resultado_final = f"Valor a pagar: {x}\n"
+                #valor_final = valor_final * -1
+                #messagebox.showinfo("Valor", f"Valor a pagar {valor_final}")
+                texto_resultado_final = f"Valor a restituir: {valor_final}\n"
                 time.sleep(0.5)
             barra_progresso["value"] = 0
             
-            resultado_texto = f"Relatório do cálculo ICMS-ST:\nTotal a receber/pagar: {x}\nOutros resultados desejados...\n"
+            resultado_texto = f"Resultado do cálculo ICMS-ST:\n"
             exibir_resultado(resultado_texto, texto_resultado_final)
 
             return True
@@ -519,9 +690,9 @@ def funcao_segundo_script():
         except FileNotFoundError as e:
             messagebox.showerror("Erro", "Arquivo não encontrado. Verifique se as planilhas estão presentes.")
             return False
-        except Exception as e:
-            messagebox.showerror("Erro", f"Ocorreu um erro: {str(e)}")
-            return False
+        # except Exception as e:
+        #    messagebox.showerror("Erro", f"Ocorreu um erro: {str(e)}")
+        #    return False
 
 
 
@@ -579,7 +750,12 @@ def funcao_segundo_script():
         aba = ttk.Frame(tab_control)
         tab_control.add(aba, text='Calcular Restituição ICMS-ST')
         # Criar a barra de progresso global
-        barra_progresso = ttk.Progressbar(aba, orient="horizontal", length=300, mode="determinate")
+
+         
+        estilo_barra_progresso = ttk.Style()
+        estilo_barra_progresso.configure("EstiloBarraProgresso.Horizontal.TProgressbar", troughcolor="white", background="green")
+
+        barra_progresso = ttk.Progressbar(aba, orient="horizontal", length=300, mode="determinate", style="EstiloBarraProgresso.Horizontal.TProgressbar")
 
 
         btn_comparar_dados = tk.Button(
@@ -587,26 +763,30 @@ def funcao_segundo_script():
         barra_progresso.pack(pady=10)
         btn_comparar_dados.pack(pady=20)
 
+    
 
     # Criar a interface gráfica
-    root = tk.Tk()
-    root.title("Sistema de Cálculo")
+    segunda_janela = tk.Toplevel(janela_principal)
+    segunda_janela.title("Sistema de Cálculo")
+    
+        
+    #def fechar_janela():
+    if teste_fechar_janela:
+        segunda_janela.destroy()
+    else:
+        # Criar notebook com abas
+        tab_control = ttk.Notebook(segunda_janela)
 
-    # Criar notebook com abas
-    tab_control = ttk.Notebook(root)
+        # Criar abas
+        criar_aba_carregar_nfe_compra()
+        visualizar_dados_text_compras = criar_aba_visualizar_dados_compras()
+        criar_aba_carregar_nfe_venda()
+        visualizar_dados_text_vendas = criar_aba_visualizar_dados_vendas()
+        criar_aba_comparar_dados()
 
-
-
-    # Criar abas
-    criar_aba_carregar_nfe_compra()
-    visualizar_dados_text_compras = criar_aba_visualizar_dados_compras()
-    criar_aba_carregar_nfe_venda()
-    visualizar_dados_text_vendas = criar_aba_visualizar_dados_vendas()
-    criar_aba_comparar_dados()
-
-    # Iniciar o loop principal
-    tab_control.pack(expand=1, fill='both')
-    root.mainloop()
+        # Iniciar o loop principal
+        tab_control.pack(expand=1, fill='both')
+        root.mainloop()
 
 # Classe principal que gerencia usuários
 class UserManager:
@@ -766,7 +946,7 @@ class UserManager:
                 messagebox.showinfo("Sucesso", "Login bem-sucedido!")
 
                 # Abra a nova tela após o login
-                funcao_segundo_script()
+                funcao_segundo_script(teste_fechar_janela = False)
                 return
 
             self.login_username_entry.delete(0, END)
@@ -919,6 +1099,7 @@ class UserManager:
             # Verificar se o usuário está realmente logado
             if not self.admin_logged_in:
                 messagebox.showinfo("Aviso", "Você não está logado.")
+                funcao_segundo_script(teste_fechar_janela = True, janela_principal = None)
                 return
 
             self.notebook.tab(2, state="hidden")
@@ -933,6 +1114,9 @@ class UserManager:
     def exit_application(self):
             try:
                 if self.root and self.root.winfo_exists():  # Verifica se a janela principal ainda existe
+
+                    
+
                     # Remover instâncias de "Outra Tela" que foram fechadas
                     self.remove_closed_screens()
 
@@ -940,6 +1124,8 @@ class UserManager:
                     for window in self.root.winfo_children():
                         if window and window.winfo_exists():  # Verifica se a janela ainda existe
                             window.destroy()
+
+                    
 
                     # Fechar instâncias de "Outra Tela" que podem ter sido abertas novamente
                     for other_screen in self.other_screens:
@@ -949,12 +1135,10 @@ class UserManager:
                     resposta = messagebox.askyesno("Confirmação", "Você deseja sair?")
                     if resposta and self.root and self.root.winfo_exists():  # Verifica se a janela principal ainda existe
                         self.root.destroy()
+
+                    
             except Exception as e:
                 messagebox.showerror("Erro", f"Erro ao fechar aplicativo: {str(e)}")
-
-# ... (restante do código)
-
-
 
     # Função chamada ao fechar a instância de "Outra Tela"
     def on_close_other_screen(self, other_screen):
